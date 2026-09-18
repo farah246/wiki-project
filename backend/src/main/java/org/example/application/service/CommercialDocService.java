@@ -1,8 +1,7 @@
 package org.example.application.service;
 
-import org.example.infrastructure.persistence.entity.CommercialDoc;
-import org.example.infrastructure.persistence.repository.CommercialDocRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.application.gateway.CommercialDocGateway;
+import org.example.domain.model.CommercialDocModel;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,26 +10,25 @@ import java.util.Optional;
 @Service
 public class CommercialDocService {
 
-    private final CommercialDocRepository commercialDocRepository;
+    private final CommercialDocGateway commercialDocGateway;
 
-    @Autowired
-    public CommercialDocService(CommercialDocRepository commercialDocRepository) {
-        this.commercialDocRepository = commercialDocRepository;
+    public CommercialDocService(CommercialDocGateway commercialDocGateway) {
+        this.commercialDocGateway = commercialDocGateway;
     }
 
-    public List<CommercialDoc> getAllDocs() {
-        return commercialDocRepository.findAll();
+    public List<CommercialDocModel> getAllDocs() {
+        return commercialDocGateway.findAll();
     }
 
-    public Optional<CommercialDoc> getDocById(Long id) {
-        return commercialDocRepository.findById(id);
+    public Optional<CommercialDocModel> getDocById(Long id) {
+        return commercialDocGateway.findById(id);
     }
 
-    public CommercialDoc saveDoc(CommercialDoc doc) {
-        return commercialDocRepository.save(doc);
+    public CommercialDocModel saveDoc(CommercialDocModel doc) {
+        return commercialDocGateway.save(doc);
     }
 
     public void deleteDoc(Long id) {
-        commercialDocRepository.deleteById(id);
+        commercialDocGateway.deleteById(id);
     }
 }

@@ -1,8 +1,7 @@
 package org.example.interfaces.controller;
 
-import org.example.infrastructure.persistence.entity.CommercialDoc;
 import org.example.application.service.CommercialDocService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.domain.model.CommercialDocModel;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,23 +12,22 @@ public class CommercialDocController {
 
     private final CommercialDocService commercialDocService;
 
-    @Autowired
     public CommercialDocController(CommercialDocService commercialDocService) {
         this.commercialDocService = commercialDocService;
     }
 
     @GetMapping
-    public List<CommercialDoc> getAllDocs() {
+    public List<CommercialDocModel> getAllDocs() {
         return commercialDocService.getAllDocs();
     }
 
     @PostMapping
-    public CommercialDoc createDoc(@RequestBody CommercialDoc doc) {
+    public CommercialDocModel createDoc(@RequestBody CommercialDocModel doc) {
         return commercialDocService.saveDoc(doc);
     }
 
     @GetMapping("/{id}")
-    public CommercialDoc getDocById(@PathVariable Long id) {
+    public CommercialDocModel getDocById(@PathVariable Long id) {
         return commercialDocService.getDocById(id)
                 .orElseThrow(() -> new RuntimeException("Doc not found"));
     }
