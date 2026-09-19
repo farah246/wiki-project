@@ -1,8 +1,7 @@
 package org.example.application.service;
 
-import org.example.infrastructure.persistence.entity.Procedure;
-import org.example.infrastructure.persistence.repository.ProcedureRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.application.gateway.ProcedureGateway;
+import org.example.domain.model.ProcedureModel;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,26 +10,25 @@ import java.util.Optional;
 @Service
 public class ProcedureService {
 
-    private final ProcedureRepository procedureRepository;
+    private final ProcedureGateway procedureGateway;
 
-    @Autowired
-    public ProcedureService(ProcedureRepository procedureRepository) {
-        this.procedureRepository = procedureRepository;
+    public ProcedureService(ProcedureGateway procedureGateway) {
+        this.procedureGateway = procedureGateway;
     }
 
-    public List<Procedure> getAllProcedures() {
-        return procedureRepository.findAll();
+    public List<ProcedureModel> getAllProcedures() {
+        return procedureGateway.findAll();
     }
 
-    public Optional<Procedure> getProcedureById(Long id) {
-        return procedureRepository.findById(id);
+    public Optional<ProcedureModel> getProcedureById(Long id) {
+        return procedureGateway.findById(id);
     }
 
-    public Procedure saveProcedure(Procedure procedure) {
-        return procedureRepository.save(procedure);
+    public ProcedureModel saveProcedure(ProcedureModel procedure) {
+        return procedureGateway.save(procedure);
     }
 
     public void deleteProcedure(Long id) {
-        procedureRepository.deleteById(id);
+        procedureGateway.deleteById(id);
     }
 }

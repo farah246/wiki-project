@@ -1,8 +1,7 @@
 package org.example.application.service;
 
-import org.example.infrastructure.persistence.entity.Embedding;
-import org.example.infrastructure.persistence.repository.EmbeddingRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.application.gateway.EmbeddingGateway;
+import org.example.domain.model.EmbeddingModel;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,26 +10,25 @@ import java.util.Optional;
 @Service
 public class EmbeddingService {
 
-    private final EmbeddingRepository embeddingRepository;
+    private final EmbeddingGateway embeddingGateway;
 
-    @Autowired
-    public EmbeddingService(EmbeddingRepository embeddingRepository) {
-        this.embeddingRepository = embeddingRepository;
+    public EmbeddingService(EmbeddingGateway embeddingGateway) {
+        this.embeddingGateway = embeddingGateway;
     }
 
-    public List<Embedding> getAllEmbeddings() {
-        return embeddingRepository.findAll();
+    public List<EmbeddingModel> getAllEmbeddings() {
+        return embeddingGateway.findAll();
     }
 
-    public Optional<Embedding> getEmbeddingById(Long id) {
-        return embeddingRepository.findById(id);
+    public Optional<EmbeddingModel> getEmbeddingById(Long id) {
+        return embeddingGateway.findById(id);
     }
 
-    public Embedding saveEmbedding(Embedding embedding) {
-        return embeddingRepository.save(embedding);
+    public EmbeddingModel saveEmbedding(EmbeddingModel embedding) {
+        return embeddingGateway.save(embedding);
     }
 
     public void deleteEmbedding(Long id) {
-        embeddingRepository.deleteById(id);
+        embeddingGateway.deleteById(id);
     }
 }

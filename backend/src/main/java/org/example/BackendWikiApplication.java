@@ -1,7 +1,7 @@
 package org.example;
 
 import io.github.cdimascio.dotenv.Dotenv;
-import org.example.application.service.DatabaseCheckService;
+import org.example.infrastructure.config.DatabaseCheckService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;

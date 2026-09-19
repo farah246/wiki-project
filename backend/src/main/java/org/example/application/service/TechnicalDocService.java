@@ -1,8 +1,7 @@
 package org.example.application.service;
 
-import org.example.infrastructure.persistence.entity.TechnicalDoc;
-import org.example.infrastructure.persistence.repository.TechnicalDocRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.application.gateway.TechnicalDocGateway;
+import org.example.domain.model.TechnicalDocModel;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,26 +10,25 @@ import java.util.Optional;
 @Service
 public class TechnicalDocService {
 
-    private final TechnicalDocRepository technicalDocRepository;
+    private final TechnicalDocGateway technicalDocGateway;
 
-    @Autowired
-    public TechnicalDocService(TechnicalDocRepository technicalDocRepository) {
-        this.technicalDocRepository = technicalDocRepository;
+    public TechnicalDocService(TechnicalDocGateway technicalDocGateway) {
+        this.technicalDocGateway = technicalDocGateway;
     }
 
-    public List<TechnicalDoc> getAllTechnicalDocs() {
-        return technicalDocRepository.findAll();
+    public List<TechnicalDocModel> getAllTechnicalDocs() {
+        return technicalDocGateway.findAll();
     }
 
-    public Optional<TechnicalDoc> getTechnicalDocById(Long id) {
-        return technicalDocRepository.findById(id);
+    public Optional<TechnicalDocModel> getTechnicalDocById(Long id) {
+        return technicalDocGateway.findById(id);
     }
 
-    public TechnicalDoc saveTechnicalDoc(TechnicalDoc technicalDoc) {
-        return technicalDocRepository.save(technicalDoc);
+    public TechnicalDocModel saveTechnicalDoc(TechnicalDocModel technicalDoc) {
+        return technicalDocGateway.save(technicalDoc);
     }
 
     public void deleteTechnicalDoc(Long id) {
-        technicalDocRepository.deleteById(id);
+        technicalDocGateway.deleteById(id);
     }
 }

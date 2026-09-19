@@ -1,8 +1,7 @@
 package org.example.interfaces.controller;
 
-import org.example.infrastructure.persistence.entity.Procedure;
 import org.example.application.service.ProcedureService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.domain.model.ProcedureModel;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,24 +12,23 @@ public class ProcedureController {
 
     private final ProcedureService procedureService;
 
-    @Autowired
     public ProcedureController(ProcedureService procedureService) {
         this.procedureService = procedureService;
     }
 
     @GetMapping
-    public List<Procedure> getAllProcedures() {
+    public List<ProcedureModel> getAllProcedures() {
         return procedureService.getAllProcedures();
     }
 
     @GetMapping("/{id}")
-    public Procedure getProcedureById(@PathVariable Long id) {
+    public ProcedureModel getProcedureById(@PathVariable Long id) {
         return procedureService.getProcedureById(id)
                 .orElseThrow(() -> new RuntimeException("Procedure not found"));
     }
 
     @PostMapping
-    public Procedure createProcedure(@RequestBody Procedure procedure) {
+    public ProcedureModel createProcedure(@RequestBody ProcedureModel procedure) {
         return procedureService.saveProcedure(procedure);
     }
 

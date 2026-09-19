@@ -1,8 +1,7 @@
 package org.example.application.service;
 
-import org.example.infrastructure.persistence.entity.DocHistory;
-import org.example.infrastructure.persistence.repository.DocHistoryRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.application.gateway.DocHistoryGateway;
+import org.example.domain.model.DocHistoryModel;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,26 +10,25 @@ import java.util.Optional;
 @Service
 public class DocHistoryService {
 
-    private final DocHistoryRepository docHistoryRepository;
+    private final DocHistoryGateway docHistoryGateway;
 
-    @Autowired
-    public DocHistoryService(DocHistoryRepository docHistoryRepository) {
-        this.docHistoryRepository = docHistoryRepository;
+    public DocHistoryService(DocHistoryGateway docHistoryGateway) {
+        this.docHistoryGateway = docHistoryGateway;
     }
 
-    public List<DocHistory> getAllHistories() {
-        return docHistoryRepository.findAll();
+    public List<DocHistoryModel> getAllHistories() {
+        return docHistoryGateway.findAll();
     }
 
-    public Optional<DocHistory> getHistoryById(Long id) {
-        return docHistoryRepository.findById(id);
+    public Optional<DocHistoryModel> getHistoryById(Long id) {
+        return docHistoryGateway.findById(id);
     }
 
-    public DocHistory saveHistory(DocHistory history) {
-        return docHistoryRepository.save(history);
+    public DocHistoryModel saveHistory(DocHistoryModel history) {
+        return docHistoryGateway.save(history);
     }
 
     public void deleteHistory(Long id) {
-        docHistoryRepository.deleteById(id);
+        docHistoryGateway.deleteById(id);
     }
 }
