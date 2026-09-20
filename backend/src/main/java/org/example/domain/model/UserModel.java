@@ -1,5 +1,7 @@
 package org.example.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.LocalDateTime;
 
 public record UserModel(
@@ -7,7 +9,7 @@ public record UserModel(
         String username,
         String email,
         String role,
-        String passwordHash,
+        @JsonIgnore String passwordHash,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

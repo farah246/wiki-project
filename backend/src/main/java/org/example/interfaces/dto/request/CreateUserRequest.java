@@ -1,16 +1,17 @@
 package org.example.interfaces.dto.request;
 
+import jakarta.validation.constraints.NotNull;
+import org.example.domain.enums.UserRole;
 
 public class CreateUserRequest {
+
     private String username;
-
     private String email;
-
     private String password;
 
-    private String role; // Optional, defaults to "USER" if not provided
+    @NotNull
+    private UserRole role;
 
-    // Getters and setters
     public String getUsername() {
         return username;
     }
@@ -35,11 +36,11 @@ public class CreateUserRequest {
         this.password = password;
     }
 
-    public String getRole() {
+    public UserRole getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(UserRole role) {
         this.role = role;
     }
 }

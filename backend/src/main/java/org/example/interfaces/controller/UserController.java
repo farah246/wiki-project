@@ -8,7 +8,7 @@ import org.example.interfaces.dto.response.CreateUserResponse;
 import org.example.interfaces.mapper.UserDtoMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -48,7 +48,7 @@ public class UserController {
     }
 
     @PostMapping
-    public CreateUserResponse create(@RequestBody CreateUserRequest request) {
+    public CreateUserResponse create(@Valid @RequestBody CreateUserRequest request) {
         UserModel userModel = userDtoMapper.toDomain(request);
         UserModel createdUser = createUser.execute(userModel);
 
