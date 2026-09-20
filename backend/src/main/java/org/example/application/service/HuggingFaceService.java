@@ -20,8 +20,7 @@ public class HuggingFaceService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // Use a valid model that supports feature extraction via API
-    private final String apiUrl = "https://api-inference.huggingface.co/models/thenlper/gte-small";
-
+    private final String apiUrl = "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5";
     @Value("${huggingface.api.token}")
     private String HF_API_TOKEN;
 
@@ -29,6 +28,7 @@ public class HuggingFaceService {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + HF_API_TOKEN);
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
         // Must be array of strings!
         String jsonBody = "{ \"inputs\": [\"" + inputText + "\"] }";
