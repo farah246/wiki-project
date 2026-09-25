@@ -32,6 +32,14 @@ public class TechnicalDocController {
         return technicalDocService.saveTechnicalDoc(technicalDoc);
     }
 
+    @PutMapping("/{id}")
+    public TechnicalDocModel update(
+            @PathVariable Long id,
+            @RequestBody TechnicalDocModel technicalDoc
+    ) {
+        return technicalDocService.updateTechnicalDoc(id, technicalDoc);
+    }
+
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         technicalDocService.deleteTechnicalDoc(id);

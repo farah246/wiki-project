@@ -32,6 +32,14 @@ public class CommercialDocController {
                 .orElseThrow(() -> new RuntimeException("Doc not found"));
     }
 
+    @PutMapping("/{id}")
+    public CommercialDocModel updateDoc(
+            @PathVariable Long id,
+            @RequestBody CommercialDocModel doc
+    ) {
+        return commercialDocService.updateDoc(id, doc);
+    }
+
     @DeleteMapping("/{id}")
     public void deleteDoc(@PathVariable Long id) {
         commercialDocService.deleteDoc(id);

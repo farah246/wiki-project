@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CommercialDocService {
@@ -44,9 +45,40 @@ public class CommercialDocService {
         return savedCommercialDoc;
     }
 
+    @Transactional
+    public CommercialDocModel updateDoc(Long id, CommercialDocModel doc) {
+
+        CommercialDocModel existingDoc = commercialDocGateway.findById(id)
+                .orElseThrow(() -> new RuntimeException("Doc not found"));
+
+        CommercialDocModel updatedDoc = new CommercialDocModel(
+                id,
+                doc.title(),
+                doc.proposalText(),
+                doc.user(),
+                doc.clientName(),
+                existingDoc.createdAt(),
+                existingDoc.updatedAt()
+        );
+
+        CommercialDocModel savedDoc = commercialDocGateway.save(updatedDoc);
+
+        embeddingService.deleteEmbeddingsForCommercialDoc(id);
+
+        documentEmbeddingService.generateEmbeddingsForCommercialDoc(
+                savedDoc.id(),
+                savedDoc.textForEmbedding()
+        );
+
+        return savedDoc;
+    }
+
+
+
     public void deleteDoc(Long id) {
 
-        commercialDocGateway.deleteById(id);
         embeddingService.deleteEmbeddingsForCommercialDoc(id);
+        commercialDocGateway.deleteById(id);
+
     }
 }

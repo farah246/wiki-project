@@ -11,6 +11,7 @@ public class CommercialDocEntityMapper {
     public CommercialDoc toEntity(CommercialDocModel domainObject) {
         CommercialDoc entity = new CommercialDoc();
 
+        entity.setId(domainObject.id());
         entity.setTitle(domainObject.title());
         entity.setProposalText(domainObject.proposalText());
         entity.setClientName(domainObject.clientName());
@@ -23,7 +24,6 @@ public class CommercialDocEntityMapper {
 
         return entity;
     }
-
     public CommercialDocModel toDomain(CommercialDoc entityObject) {
         return new CommercialDocModel(
                 entityObject.getId(),

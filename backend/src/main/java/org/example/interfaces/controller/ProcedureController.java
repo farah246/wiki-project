@@ -32,6 +32,14 @@ public class ProcedureController {
         return procedureService.saveProcedure(procedure);
     }
 
+    @PutMapping("/{id}")
+    public ProcedureModel updateProcedure(
+            @PathVariable Long id,
+            @RequestBody ProcedureModel procedure
+    ) {
+        return procedureService.updateProcedure(id, procedure);
+    }
+
     @DeleteMapping("/{id}")
     public void deleteProcedure(@PathVariable Long id) {
         procedureService.deleteProcedure(id);

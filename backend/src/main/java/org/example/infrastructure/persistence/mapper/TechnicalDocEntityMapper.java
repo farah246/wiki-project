@@ -11,6 +11,7 @@ public class TechnicalDocEntityMapper {
 
     public TechnicalDoc toEntity(TechnicalDocModel domainObject) {
         TechnicalDoc entity = new TechnicalDoc();
+        entity.setId(domainObject.id());
 
         entity.setTitle(domainObject.title());
         entity.setContent(domainObject.content());

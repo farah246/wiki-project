@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ProcedureService {
@@ -38,7 +39,34 @@ public class ProcedureService {
 
         documentEmbeddingService.generateEmbeddingsForProcedure(
                 savedProcedure.id(),
-                savedProcedure.title() + "\n\n" + savedProcedure.description()
+                savedProcedure.textForEmbedding()
+        );
+
+        return savedProcedure;
+    }
+    @Transactional
+    public ProcedureModel updateProcedure(Long id, ProcedureModel procedure) {
+
+        ProcedureModel existingProcedure = procedureGateway.findById(id)
+                .orElseThrow(() -> new RuntimeException("Procedure not found"));
+
+        ProcedureModel updatedProcedure = new ProcedureModel(
+                id,
+                procedure.title(),
+                procedure.description(),
+                procedure.visualModel(),
+                procedure.user(),
+                existingProcedure.createdAt(),
+                existingProcedure.updatedAt()
+        );
+
+        ProcedureModel savedProcedure = procedureGateway.save(updatedProcedure);
+
+        embeddingService.deleteEmbeddingsForProcedure(id);
+
+        documentEmbeddingService.generateEmbeddingsForProcedure(
+                savedProcedure.id(),
+                savedProcedure.textForEmbedding()
         );
 
         return savedProcedure;

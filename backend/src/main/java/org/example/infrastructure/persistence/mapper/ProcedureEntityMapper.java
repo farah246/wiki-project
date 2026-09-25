@@ -11,6 +11,7 @@ public class ProcedureEntityMapper {
 
     public Procedure toEntity(ProcedureModel domainObject) {
         Procedure entity = new Procedure();
+        entity.setId(domainObject.id());
 
         entity.setTitle(domainObject.title());
         entity.setDescription(domainObject.description());
