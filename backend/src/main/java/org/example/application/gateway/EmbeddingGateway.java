@@ -14,4 +14,10 @@ public interface EmbeddingGateway {
     EmbeddingModel save(EmbeddingModel embedding);
 
     void deleteById(Long id);
+
+    void deleteByTechnicalDocId(Long technicalDocId);
+
+    void deleteByCommercialDocId(Long commercialDocId);
+
+    void deleteByProcedureId(Long productDocId);
 }

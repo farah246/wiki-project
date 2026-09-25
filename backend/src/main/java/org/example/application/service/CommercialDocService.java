@@ -12,8 +12,18 @@ public class CommercialDocService {
 
     private final CommercialDocGateway commercialDocGateway;
 
-    public CommercialDocService(CommercialDocGateway commercialDocGateway) {
+    private final EmbeddingService embeddingService;
+
+    private final DocumentEmbeddingService documentEmbeddingService;
+
+    public CommercialDocService(
+            CommercialDocGateway commercialDocGateway,
+            EmbeddingService embeddingService,
+            DocumentEmbeddingService documentEmbeddingService
+    ) {
         this.commercialDocGateway = commercialDocGateway;
+        this.embeddingService = embeddingService;
+        this.documentEmbeddingService = documentEmbeddingService;
     }
 
     public List<CommercialDocModel> getAllDocs() {
@@ -25,10 +35,18 @@ public class CommercialDocService {
     }
 
     public CommercialDocModel saveDoc(CommercialDocModel doc) {
-        return commercialDocGateway.save(doc);
+
+        CommercialDocModel  savedCommercialDoc =  commercialDocGateway.save(doc);
+        documentEmbeddingService.generateEmbeddingsForCommercialDoc(
+                savedCommercialDoc.id(),
+                savedCommercialDoc.textForEmbedding()
+        );
+        return savedCommercialDoc;
     }
 
     public void deleteDoc(Long id) {
+
         commercialDocGateway.deleteById(id);
+        embeddingService.deleteEmbeddingsForCommercialDoc(id);
     }
 }

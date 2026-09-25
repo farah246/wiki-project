@@ -31,4 +31,16 @@ public class EmbeddingService {
     public void deleteEmbedding(Long id) {
         embeddingGateway.deleteById(id);
     }
+
+    public void deleteEmbeddingsForTechnicalDoc(Long technicalDocId) {
+        embeddingGateway.deleteByTechnicalDocId(technicalDocId);
+    }
+
+    public void deleteEmbeddingsForCommercialDoc(Long commercialDocId) {
+        embeddingGateway.deleteByCommercialDocId(commercialDocId);
+    }
+
+    public void deleteEmbeddingsForProcedure(Long procedureId) {
+        embeddingGateway.deleteByProcedureId(procedureId);
+    }
 }

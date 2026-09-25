@@ -50,4 +50,16 @@ public class EmbeddingRepositoryGateway implements EmbeddingGateway {
     public void deleteById(Long id) {
         embeddingRepository.deleteById(id);
     }
+    @Override
+    public void deleteByTechnicalDocId(Long technicalDocId) {
+        embeddingRepository.deleteByTechnicalDoc_Id(technicalDocId);
+    }
+
+    public void deleteByCommercialDocId(Long commercialDocId) {
+        embeddingRepository.deleteByCommercialDoc_Id(commercialDocId);
+    }
+
+    public void deleteByProcedureId(Long procedureId) {
+        embeddingRepository.deleteByProcedure_Id(procedureId);
+    }
 }

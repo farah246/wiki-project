@@ -41,4 +41,48 @@ public class DocumentEmbeddingService {
 
         return embeddings;
     }
+
+    public List<EmbeddingModel> generateEmbeddingsForCommercialDoc(
+            Long commercialDocId,
+            String text
+    ) {
+        List<String> chunks = chunkingService.chunkText(text);
+        List<EmbeddingModel> embeddings = new ArrayList<>();
+
+        for (int i = 0; i < chunks.size(); i++) {
+            EmbeddingModel embedding = embeddingClientService.generateAndSaveEmbedding(
+                    null,
+                    commercialDocId,
+                    null,
+                    i,
+                    chunks.get(i)
+            );
+
+            embeddings.add(embedding);
+        }
+
+        return embeddings;
+    }
+
+    public List<EmbeddingModel> generateEmbeddingsForProcedure(
+            Long procedureId,
+            String text
+    ) {
+        List<String> chunks = chunkingService.chunkText(text);
+        List<EmbeddingModel> embeddings = new ArrayList<>();
+
+        for (int i = 0; i < chunks.size(); i++) {
+            EmbeddingModel embedding = embeddingClientService.generateAndSaveEmbedding(
+                    null,
+                    null,
+                    procedureId,
+                    i,
+                    chunks.get(i)
+            );
+
+            embeddings.add(embedding);
+        }
+
+        return embeddings;
+    }
 }

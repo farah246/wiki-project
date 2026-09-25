@@ -12,8 +12,17 @@ public class TechnicalDocService {
 
     private final TechnicalDocGateway technicalDocGateway;
 
-    public TechnicalDocService(TechnicalDocGateway technicalDocGateway) {
+    private final EmbeddingService embeddingService;
+    private final DocumentEmbeddingService documentEmbeddingService;
+
+    public TechnicalDocService(
+            TechnicalDocGateway technicalDocGateway,
+            DocumentEmbeddingService documentEmbeddingService,
+            EmbeddingService embeddingService
+    ) {
         this.technicalDocGateway = technicalDocGateway;
+        this.documentEmbeddingService = documentEmbeddingService;
+        this.embeddingService = embeddingService;
     }
 
     public List<TechnicalDocModel> getAllTechnicalDocs() {
@@ -25,10 +34,19 @@ public class TechnicalDocService {
     }
 
     public TechnicalDocModel saveTechnicalDoc(TechnicalDocModel technicalDoc) {
-        return technicalDocGateway.save(technicalDoc);
+        TechnicalDocModel savedTechnicalDoc = technicalDocGateway.save(technicalDoc);
+
+        documentEmbeddingService.generateEmbeddingsForTechnicalDoc(
+                savedTechnicalDoc.id(),
+                savedTechnicalDoc.textForEmbedding()
+        );
+
+        return savedTechnicalDoc;
     }
 
     public void deleteTechnicalDoc(Long id) {
         technicalDocGateway.deleteById(id);
+        embeddingService.deleteEmbeddingsForTechnicalDoc(id);
+
     }
 }
