@@ -10,5 +10,10 @@ public record CommercialDocModel(
         String clientName,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
-) {
+) implements EmbeddableDocument {
+
+    @Override
+    public String textForEmbedding() {
+        return proposalText;
+    }
 }

@@ -10,5 +10,10 @@ public record ProcedureModel(
         UserModel user,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
-) {
+) implements EmbeddableDocument {
+
+    @Override
+    public String textForEmbedding() {
+        return description + "\n\n" + visualModel;
+    }
 }

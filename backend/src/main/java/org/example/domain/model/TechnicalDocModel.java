@@ -11,5 +11,10 @@ public record TechnicalDocModel(
         UserModel user,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
-) {
+) implements EmbeddableDocument {
+
+    @Override
+    public String textForEmbedding() {
+        return content + "\n\n" + codeSnippet;
+    }
 }
