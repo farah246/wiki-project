@@ -1,11 +1,15 @@
 "use client"
 
-import { useOptimistic } from "react"
-import Form from "next/form"
+import { startTransition, useOptimistic, useState } from "react"
 import Link from "next/link"
-import { FileText, Pencil, Trash2 } from "lucide-react"
+import {
+    FileText,
+    Pencil,
+    Trash2,
+} from "lucide-react"
 
 import { deleteTechnicalDoc } from "@/actions/technical-docs"
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
 import type { TechnicalDoc } from "@/lib/types/technical-doc"
 
 type TechnicalDocListProps = {
@@ -13,8 +17,8 @@ type TechnicalDocListProps = {
 }
 
 export function TechnicalDocList({
-    documents,
-}: TechnicalDocListProps) {
+                                     documents,
+                                 }: TechnicalDocListProps) {
     const [optimisticDocuments, setOptimisticDocuments] =
         useOptimistic(
             documents,
@@ -25,8 +29,16 @@ export function TechnicalDocList({
             }
         )
 
+    const [documentToDelete, setDocumentToDelete] =
+        useState<TechnicalDoc | null>(null)
+
     const deleteDocument = async (documentId: number) => {
-        setOptimisticDocuments(documentId)
+        startTransition(() => {
+            setOptimisticDocuments(documentId)
+        })
+
+        setDocumentToDelete(null)
+
         await deleteTechnicalDoc(documentId)
     }
 
@@ -47,55 +59,69 @@ export function TechnicalDocList({
     }
 
     return (
-        <div className="space-y-4">
-            {optimisticDocuments.map((document) => (
-                <article
-                    key={document.id}
-                    className="rounded-2xl border bg-card p-5 transition hover:shadow-sm"
-                >
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                            <Link
-                                href={`/technical-docs/${document.id}`}
-                                className="text-lg font-semibold tracking-tight hover:text-violet-600"
-                            >
-                                {document.title}
-                            </Link>
+        <>
+            <div className="space-y-4">
+                {optimisticDocuments.map((document) => (
+                    <article
+                        key={document.id}
+                        className="rounded-2xl border bg-card p-5 transition hover:shadow-sm"
+                    >
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                                <Link
+                                    href={`/technical-docs/${document.id}`}
+                                    className="text-lg font-semibold tracking-tight hover:text-violet-600"
+                                >
+                                    {document.title}
+                                </Link>
 
-                            <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                                {document.content}
-                            </p>
+                                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                                    {document.content}
+                                </p>
+                            </div>
+
+                            <FileText className="h-5 w-5 shrink-0 text-violet-600" />
                         </div>
 
-                        <FileText className="h-5 w-5 shrink-0 text-violet-600" />
-                    </div>
+                        <div className="mt-5 flex items-center gap-2">
+                            <Link
+                                href={`/technical-docs/${document.id}/edit`}
+                                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-muted"
+                            >
+                                <Pencil className="h-4 w-4" />
+                                Edit
+                            </Link>
 
-                    <div className="mt-5 flex items-center gap-2">
-                        <Link
-                            href={`/technical-docs/${document.id}/edit`}
-className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-muted"
-    >
-    <Pencil className="h-4 w-4" />
-    Edit
-    </Link>
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setDocumentToDelete(document)
+                                }
+                                className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                Delete
+                            </button>
+                        </div>
+                    </article>
+                ))}
+            </div>
 
-<Form
-    action={deleteDocument.bind(
-        null,
-        document.id
-    )}
->
-    <button
-        type="submit"
-        className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
-    >
-        <Trash2 className="h-4 w-4" />
-        Delete
-    </button>
-</Form>
-</div>
-</article>
-))}
-</div>
-)
+            <DeleteConfirmationDialog
+                open={Boolean(documentToDelete)}
+                title="Delete technical document?"
+                description={
+                    documentToDelete
+                        ? `Are you sure you want to delete "${documentToDelete.title}"? This action cannot be undone.`
+                        : undefined
+                }
+                onCancel={() => setDocumentToDelete(null)}
+                onConfirm={() => {
+                    if (documentToDelete) {
+                        deleteDocument(documentToDelete.id)
+                    }
+                }}
+            />
+        </>
+    )
 }

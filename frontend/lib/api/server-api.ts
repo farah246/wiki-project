@@ -39,7 +39,13 @@ async function serverApiFetch<T>(
         return undefined as T
     }
 
-    return response.json()
+    const responseText = await response.text()
+
+    if (!responseText) {
+        return undefined as T
+    }
+
+    return JSON.parse(responseText)
 }
 
 export const serverApi = {
