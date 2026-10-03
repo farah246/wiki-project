@@ -3,11 +3,13 @@ package org.example.application.service;
 import org.example.application.gateway.ProcedureGateway;
 import org.example.domain.model.EmbeddingModel;
 import org.example.domain.model.ProcedureModel;
+import org.example.domain.model.UserModel;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ProcedureService {
@@ -15,15 +17,18 @@ public class ProcedureService {
     private final ProcedureGateway procedureGateway;
     private final EmbeddingService embeddingService;
     private final DocumentEmbeddingService documentEmbeddingService;
+    private final CurrentUserService currentUserService;
 
     public ProcedureService(
             ProcedureGateway procedureGateway,
             EmbeddingService embeddingService,
-            DocumentEmbeddingService documentEmbeddingService
+            DocumentEmbeddingService documentEmbeddingService,
+            CurrentUserService currentUserService
     ) {
         this.procedureGateway = procedureGateway;
         this.embeddingService = embeddingService;
         this.documentEmbeddingService = documentEmbeddingService;
+        this.currentUserService = currentUserService;
     }
 
     public List<ProcedureModel> getAllProcedures() {
@@ -34,8 +39,25 @@ public class ProcedureService {
         return procedureGateway.findById(id);
     }
 
-    public ProcedureModel saveProcedure(ProcedureModel procedure) {
-        ProcedureModel savedProcedure = procedureGateway.save(procedure);
+    public ProcedureModel saveProcedure(
+            ProcedureModel procedure,
+            Authentication authentication
+    ) {
+        UserModel currentUser =
+                currentUserService.getCurrentUser(authentication);
+
+        ProcedureModel procedureWithUser = new ProcedureModel(
+                procedure.id(),
+                procedure.title(),
+                procedure.description(),
+                procedure.visualModel(),
+                currentUser,
+                procedure.createdAt(),
+                procedure.updatedAt()
+        );
+
+        ProcedureModel savedProcedure =
+                procedureGateway.save(procedureWithUser);
 
         documentEmbeddingService.generateEmbeddingsForProcedure(
                 savedProcedure.id(),
@@ -44,25 +66,39 @@ public class ProcedureService {
 
         return savedProcedure;
     }
-    @Transactional
-    public ProcedureModel updateProcedure(Long id, ProcedureModel procedure) {
 
-        ProcedureModel existingProcedure = procedureGateway.findById(id)
-                .orElseThrow(() -> new RuntimeException("Procedure not found"));
+    @Transactional
+    public ProcedureModel updateProcedure(
+            Long id,
+            ProcedureModel procedure
+    ) {
+        ProcedureModel existingProcedure =
+                procedureGateway.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException("Procedure not found"));
 
         ProcedureModel updatedProcedure = new ProcedureModel(
                 id,
                 procedure.title(),
                 procedure.description(),
                 procedure.visualModel(),
-                procedure.user(),
+                existingProcedure.user(),
                 existingProcedure.createdAt(),
                 existingProcedure.updatedAt()
         );
 
-        ProcedureModel savedProcedure = procedureGateway.save(updatedProcedure);
+        ProcedureModel savedProcedure =
+                procedureGateway.save(updatedProcedure);
 
-        embeddingService.deleteEmbeddingsForProcedure(id);
+        List<EmbeddingModel> embeddings =
+                embeddingService.getAllEmbeddings();
+
+        embeddings.stream()
+                .filter(embedding ->
+                        id.equals(embedding.procedureId()))
+                .forEach(embedding ->
+                        embeddingService.deleteEmbedding(
+                                embedding.id()));
 
         documentEmbeddingService.generateEmbeddingsForProcedure(
                 savedProcedure.id(),
@@ -73,12 +109,15 @@ public class ProcedureService {
     }
 
     public void deleteProcedure(Long id) {
-
-        List<EmbeddingModel> embeddings = embeddingService.getAllEmbeddings();
+        List<EmbeddingModel> embeddings =
+                embeddingService.getAllEmbeddings();
 
         embeddings.stream()
-                .filter(embedding -> id.equals(embedding.procedureId()))
-                .forEach(embedding -> embeddingService.deleteEmbedding(embedding.id()));
+                .filter(embedding ->
+                        id.equals(embedding.procedureId()))
+                .forEach(embedding ->
+                        embeddingService.deleteEmbedding(
+                                embedding.id()));
 
         procedureGateway.deleteById(id);
     }

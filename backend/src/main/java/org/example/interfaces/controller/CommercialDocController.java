@@ -2,7 +2,9 @@ package org.example.interfaces.controller;
 
 import org.example.application.service.CommercialDocService;
 import org.example.domain.model.CommercialDocModel;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
@@ -22,9 +24,12 @@ public class CommercialDocController {
     }
 
     @PostMapping
-    public CommercialDocModel createDoc(@RequestBody CommercialDocModel doc) {
-        return commercialDocService.saveDoc(doc);
-    }
+    public CommercialDocModel create(
+            @RequestBody CommercialDocModel doc,
+            Authentication authentication
+    ) {
+        return commercialDocService.saveDoc(doc, authentication);
+    }   
 
     @GetMapping("/{id}")
     public CommercialDocModel getDocById(@PathVariable Long id) {

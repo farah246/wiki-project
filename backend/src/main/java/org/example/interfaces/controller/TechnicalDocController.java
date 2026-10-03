@@ -2,6 +2,7 @@ package org.example.interfaces.controller;
 
 import org.example.application.service.TechnicalDocService;
 import org.example.domain.model.TechnicalDocModel;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,8 +29,14 @@ public class TechnicalDocController {
     }
 
     @PostMapping
-    public TechnicalDocModel create(@RequestBody TechnicalDocModel technicalDoc) {
-        return technicalDocService.saveTechnicalDoc(technicalDoc);
+    public TechnicalDocModel create(
+            @RequestBody TechnicalDocModel technicalDoc,
+            Authentication authentication
+    ) {
+        return technicalDocService.saveTechnicalDoc(
+                technicalDoc,
+                authentication
+        );
     }
 
     @PutMapping("/{id}")

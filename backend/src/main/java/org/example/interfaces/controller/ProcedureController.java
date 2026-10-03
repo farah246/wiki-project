@@ -2,6 +2,7 @@ package org.example.interfaces.controller;
 
 import org.example.application.service.ProcedureService;
 import org.example.domain.model.ProcedureModel;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,23 +18,30 @@ public class ProcedureController {
     }
 
     @GetMapping
-    public List<ProcedureModel> getAllProcedures() {
+    public List<ProcedureModel> getAll() {
         return procedureService.getAllProcedures();
     }
 
     @GetMapping("/{id}")
-    public ProcedureModel getProcedureById(@PathVariable Long id) {
+    public ProcedureModel getById(@PathVariable Long id) {
         return procedureService.getProcedureById(id)
-                .orElseThrow(() -> new RuntimeException("Procedure not found"));
+                .orElseThrow(() ->
+                        new RuntimeException("Procedure not found"));
     }
 
     @PostMapping
-    public ProcedureModel createProcedure(@RequestBody ProcedureModel procedure) {
-        return procedureService.saveProcedure(procedure);
+    public ProcedureModel create(
+            @RequestBody ProcedureModel procedure,
+            Authentication authentication
+    ) {
+        return procedureService.saveProcedure(
+                procedure,
+                authentication
+        );
     }
 
     @PutMapping("/{id}")
-    public ProcedureModel updateProcedure(
+    public ProcedureModel update(
             @PathVariable Long id,
             @RequestBody ProcedureModel procedure
     ) {
@@ -41,7 +49,7 @@ public class ProcedureController {
     }
 
     @DeleteMapping("/{id}")
-    public void deleteProcedure(@PathVariable Long id) {
+    public void delete(@PathVariable Long id) {
         procedureService.deleteProcedure(id);
     }
 }
