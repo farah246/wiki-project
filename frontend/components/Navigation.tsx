@@ -13,48 +13,54 @@ export default function Navigation() {
     const { isSignedIn } = useUser()
 
     return (
-        <nav className="border-b">
-            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-                <Link href="/" className="text-xl font-semibold">
-                    Wiki
+        <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
+            <div className="flex h-16 items-center justify-between px-6">
+                <Link
+                    href="/"
+                    className="flex items-center gap-2"
+                >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-600 text-sm font-bold text-white">
+                        W
+                    </div>
+
+                    <span className="text-lg font-semibold tracking-tight text-slate-900">
+                        Wiki
+                    </span>
                 </Link>
 
-                <div className="flex items-center gap-4">
-                    {!isSignedIn ? (
-                        <>
-                            <SignInButton >
-                                <button className="text-sm">
-                                    Sign In
-                                </button>
-                            </SignInButton>
+                {!isSignedIn ? (
+                    <div className="flex items-center gap-3">
+                        <SignInButton>
+                            <button className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+                                Sign In
+                            </button>
+                        </SignInButton>
 
-                            <SignUpButton >
-                                <button className="rounded-md bg-purple-700 px-4 py-2 text-sm text-white">
-                                    Sign Up
-                                </button>
-                            </SignUpButton>
-                        </>
-                    ) : (
-                        <>
-                            <Link href="/dashboard" className="text-sm">
-                                Dashboard
-                            </Link>
+                        <SignUpButton>
+                            <button className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-violet-700">
+                                Sign Up
+                            </button>
+                        </SignUpButton>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-4">
+                        <Link
+                            href="/user-profile"
+                            className="hidden text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:block"
+                        >
+                            Profile
+                        </Link>
 
-                            <UserButton />
-                            <Link href="/user-profile">
-                                Profile
-                            </Link>
+                        <SignOutButton>
+                            <button className="hidden rounded-lg px-3 py-2 text-sm text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 sm:block">
+                                Sign Out
+                            </button>
+                        </SignOutButton>
 
-
-                            <SignOutButton>
-                                    <span className="cursor-pointer px-2 py-1 text-sm border border-neutral-300 dark:border-neutral-600 dark:text-neutral-200 dark:hover:bg-neutral-700">
-                                        Sign Out
-                                    </span>
-                            </SignOutButton>
-                        </>
-                    )}
-                </div>
+                        <UserButton />
+                    </div>
+                )}
             </div>
-        </nav>
+        </header>
     )
 }
