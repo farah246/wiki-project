@@ -10,6 +10,7 @@ import {
 
 import { deleteCommercialDoc } from "@/actions/commercial-doc"
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
+import { SearchBar } from "@/components/ui/search-bar"
 import type { CommercialDoc } from "@/lib/types/commercial-doc"
 
 type CommercialDocListProps = {
@@ -19,6 +20,8 @@ type CommercialDocListProps = {
 export function CommercialDocList({
                                       documents,
                                   }: CommercialDocListProps) {
+    const [searchQuery, setSearchQuery] = useState("")
+
     const [optimisticDocuments, setOptimisticDocuments] =
         useOptimistic(
             documents,
@@ -32,6 +35,20 @@ export function CommercialDocList({
     const [documentToDelete, setDocumentToDelete] =
         useState<CommercialDoc | null>(null)
 
+    const filteredDocuments = optimisticDocuments.filter((document) => {
+        const query = searchQuery.toLowerCase().trim()
+
+        if (!query) {
+            return true
+        }
+
+        return (
+            document.title.toLowerCase().includes(query) ||
+            document.proposalText.toLowerCase().includes(query) ||
+            document.clientName.toLowerCase().includes(query)
+        )
+    })
+
     const deleteDocument = async (documentId: number) => {
         startTransition(() => {
             setOptimisticDocuments(documentId)
@@ -42,73 +59,83 @@ export function CommercialDocList({
         await deleteCommercialDoc(documentId)
     }
 
-    if (optimisticDocuments.length === 0) {
-        return (
-            <div className="rounded-2xl border bg-card px-6 py-12 text-center">
-                <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
-
-                <h2 className="mt-4 text-lg font-semibold">
-                    No commercial documents
-                </h2>
-
-                <p className="mt-2 text-sm text-muted-foreground">
-                    Create your first commercial document to get started.
-                </p>
-            </div>
-        )
-    }
-
     return (
         <>
-            <div className="space-y-4">
-                {optimisticDocuments.map((document) => (
-                    <article
-                        key={document.id}
-                        className="rounded-2xl border bg-card p-5 transition hover:shadow-sm"
-                    >
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="min-w-0">
-                                <Link
-                                    href={`/commercial-docs/${document.id}`}
-                                    className="text-lg font-semibold tracking-tight hover:text-violet-600"
-                                >
-                                    {document.title}
-                                </Link>
+            <div className="space-y-6">
+                <SearchBar
+                    placeholder="Search commercial documents..."
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                />
 
-                                <p className="mt-2 text-sm font-medium text-muted-foreground">
-                                    {document.clientName}
-                                </p>
+                {filteredDocuments.length === 0 ? (
+                    <div className="rounded-2xl border bg-card px-6 py-12 text-center">
+                        <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
 
-                                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                                    {document.proposalText}
-                                </p>
-                            </div>
+                        <h2 className="mt-4 text-lg font-semibold">
+                            {searchQuery
+                                ? "No matching documents"
+                                : "No commercial documents"}
+                        </h2>
 
-                            <FileText className="h-5 w-5 shrink-0 text-violet-600" />
-                        </div>
-
-                        <div className="mt-5 flex items-center gap-2">
-                            <Link
-                                href={`/commercial-docs/${document.id}/edit`}
-                                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-muted"
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            {searchQuery
+                                ? "Try a different search term."
+                                : "Create your first commercial document to get started."}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {filteredDocuments.map((document) => (
+                            <article
+                                key={document.id}
+                                className="rounded-2xl border bg-card p-5 transition hover:shadow-sm"
                             >
-                                <Pencil className="h-4 w-4" />
-                                Edit
-                            </Link>
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="min-w-0">
+                                        <Link
+                                            href={`/commercial-docs/${document.id}`}
+                                            className="text-lg font-semibold tracking-tight hover:text-violet-600"
+                                        >
+                                            {document.title}
+                                        </Link>
 
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setDocumentToDelete(document)
-                                }
-                                className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
-                            >
-                                <Trash2 className="h-4 w-4" />
-                                Delete
-                            </button>
-                        </div>
-                    </article>
-                ))}
+                                        <p className="mt-2 text-sm font-medium text-muted-foreground">
+                                            {document.clientName}
+                                        </p>
+
+                                        <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                                            {document.proposalText}
+                                        </p>
+                                    </div>
+
+                                    <FileText className="h-5 w-5 shrink-0 text-violet-600" />
+                                </div>
+
+                                <div className="mt-5 flex items-center gap-2">
+                                    <Link
+                                        href={`/commercial-docs/${document.id}/edit`}
+                                        className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-muted"
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                        Edit
+                                    </Link>
+
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setDocumentToDelete(document)
+                                        }
+                                        className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                        Delete
+                                    </button>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <DeleteConfirmationDialog

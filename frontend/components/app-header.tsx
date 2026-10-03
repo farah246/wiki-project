@@ -23,20 +23,7 @@ export default function AppHeader() {
             </Link>
 
             {/* Search */}
-            <Link
-                href="/search"
-                className="group hidden h-10 w-full max-w-md items-center gap-3 rounded-xl border bg-muted/30 px-3.5 text-sm text-muted-foreground transition hover:border-violet-200 hover:bg-muted/60 md:flex"
-            >
-                <Search className="h-4 w-4 shrink-0" />
 
-                <span>
-                    Search your knowledge...
-                </span>
-
-                <kbd className="ml-auto rounded-md border bg-background px-2 py-0.5 text-[11px] font-medium">
-                    /
-                </kbd>
-            </Link>
 
             {/* Right side */}
             <div className="flex items-center gap-3">

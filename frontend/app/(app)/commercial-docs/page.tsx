@@ -3,6 +3,7 @@ import { Plus } from "lucide-react"
 
 import { getCommercialDocs } from "@/lib/api/commercial-doc"
 import { CommercialDocList } from "@/components/commercial-docs/commercial-doc-list"
+import { SearchBar } from "@/components/ui/search-bar"
 
 export default async function CommercialDocsPage() {
     const documents = await getCommercialDocs()
@@ -30,7 +31,8 @@ export default async function CommercialDocsPage() {
                     </Link>
                 </div>
 
-                <div className="mt-8">
+                <div className="mt-8 space-y-6">
+
                     <CommercialDocList documents={documents} />
                 </div>
             </div>

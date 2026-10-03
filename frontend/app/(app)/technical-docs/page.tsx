@@ -30,7 +30,8 @@ export default async function TechnicalDocsPage() {
                     </Link>
                 </div>
 
-                <div className="mt-8">
+                <div className="mt-8 space-y-6">
+
                     <TechnicalDocList documents={documents} />
                 </div>
             </div>

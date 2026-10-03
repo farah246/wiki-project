@@ -10,6 +10,7 @@ import {
 
 import { deleteTechnicalDoc } from "@/actions/technical-docs"
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
+import { SearchBar } from "@/components/ui/search-bar"
 import type { TechnicalDoc } from "@/lib/types/technical-doc"
 
 type TechnicalDocListProps = {
@@ -19,6 +20,8 @@ type TechnicalDocListProps = {
 export function TechnicalDocList({
                                      documents,
                                  }: TechnicalDocListProps) {
+    const [searchQuery, setSearchQuery] = useState("")
+
     const [optimisticDocuments, setOptimisticDocuments] =
         useOptimistic(
             documents,
@@ -32,6 +35,21 @@ export function TechnicalDocList({
     const [documentToDelete, setDocumentToDelete] =
         useState<TechnicalDoc | null>(null)
 
+    const filteredDocuments = optimisticDocuments.filter((document) => {
+        const query = searchQuery.toLowerCase().trim()
+
+        if (!query) {
+            return true
+        }
+
+        return (
+            document.title.toLowerCase().includes(query) ||
+            document.content.toLowerCase().includes(query) ||
+            document.codeSnippet?.toLowerCase().includes(query) ||
+            document.gitRef?.toLowerCase().includes(query)
+        )
+    })
+
     const deleteDocument = async (documentId: number) => {
         startTransition(() => {
             setOptimisticDocuments(documentId)
@@ -42,69 +60,79 @@ export function TechnicalDocList({
         await deleteTechnicalDoc(documentId)
     }
 
-    if (optimisticDocuments.length === 0) {
-        return (
-            <div className="rounded-2xl border bg-card px-6 py-12 text-center">
-                <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
-
-                <h2 className="mt-4 text-lg font-semibold">
-                    No technical documents
-                </h2>
-
-                <p className="mt-2 text-sm text-muted-foreground">
-                    Create your first technical document to get started.
-                </p>
-            </div>
-        )
-    }
-
     return (
         <>
-            <div className="space-y-4">
-                {optimisticDocuments.map((document) => (
-                    <article
-                        key={document.id}
-                        className="rounded-2xl border bg-card p-5 transition hover:shadow-sm"
-                    >
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="min-w-0">
-                                <Link
-                                    href={`/technical-docs/${document.id}`}
-                                    className="text-lg font-semibold tracking-tight hover:text-violet-600"
-                                >
-                                    {document.title}
-                                </Link>
+            <div className="space-y-6">
+                <SearchBar
+                    placeholder="Search technical documents..."
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                />
 
-                                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                                    {document.content}
-                                </p>
-                            </div>
+                {filteredDocuments.length === 0 ? (
+                    <div className="rounded-2xl border bg-card px-6 py-12 text-center">
+                        <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
 
-                            <FileText className="h-5 w-5 shrink-0 text-violet-600" />
-                        </div>
+                        <h2 className="mt-4 text-lg font-semibold">
+                            {searchQuery
+                                ? "No matching documents"
+                                : "No technical documents"}
+                        </h2>
 
-                        <div className="mt-5 flex items-center gap-2">
-                            <Link
-                                href={`/technical-docs/${document.id}/edit`}
-                                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-muted"
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            {searchQuery
+                                ? "Try a different search term."
+                                : "Create your first technical document to get started."}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {filteredDocuments.map((document) => (
+                            <article
+                                key={document.id}
+                                className="rounded-2xl border bg-card p-5 transition hover:shadow-sm"
                             >
-                                <Pencil className="h-4 w-4" />
-                                Edit
-                            </Link>
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="min-w-0">
+                                        <Link
+                                            href={`/technical-docs/${document.id}`}
+                                            className="text-lg font-semibold tracking-tight hover:text-violet-600"
+                                        >
+                                            {document.title}
+                                        </Link>
 
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setDocumentToDelete(document)
-                                }
-                                className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
-                            >
-                                <Trash2 className="h-4 w-4" />
-                                Delete
-                            </button>
-                        </div>
-                    </article>
-                ))}
+                                        <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                                            {document.content}
+                                        </p>
+                                    </div>
+
+                                    <FileText className="h-5 w-5 shrink-0 text-violet-600" />
+                                </div>
+
+                                <div className="mt-5 flex items-center gap-2">
+                                    <Link
+                                        href={`/technical-docs/${document.id}/edit`}
+                                        className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-muted"
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                        Edit
+                                    </Link>
+
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setDocumentToDelete(document)
+                                        }
+                                        className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                        Delete
+                                    </button>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <DeleteConfirmationDialog

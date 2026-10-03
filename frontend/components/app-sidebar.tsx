@@ -7,7 +7,6 @@ import {
     FileText,
     BriefcaseBusiness,
     ClipboardList,
-    Search,
     Settings,
     Sparkles,
 } from "lucide-react"
@@ -32,12 +31,7 @@ const navigation = [
         name: "Procedures",
         href: "/procedures",
         icon: ClipboardList,
-    },
-    {
-        name: "Search",
-        href: "/search",
-        icon: Search,
-    },
+    }
 ]
 
 export default function AppSidebar() {

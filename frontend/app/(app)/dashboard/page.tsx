@@ -12,7 +12,7 @@ import { getCommercialDocs } from "@/lib/api/commercial-doc"
 import { getProcedures } from "@/lib/api/procedures"
 import { getCurrentUser } from "@/lib/api/users"
 import { DocumentCard } from "@/components/documents/document-card"
-
+import { GlobalSearch } from "@/components/dashboard/global-search"
 export default async function Dashboard() {
     const [
         technicalDocs,
@@ -57,6 +57,14 @@ export default async function Dashboard() {
                         Everything your team knows, organized in one
                         intelligent workspace.
                     </p>
+                </section>
+                {/* Global search */}
+                <section className="mb-8">
+                    <GlobalSearch
+                        technicalDocs={technicalDocs}
+                        commercialDocs={commercialDocs}
+                        procedures={procedures}
+                    />
                 </section>
 
                 {/* Statistics */}
