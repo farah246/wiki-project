@@ -1,5 +1,6 @@
 package org.example.interfaces.controller;
 
+import org.example.application.service.CurrentUserService;
 import org.example.application.service.UserService;
 import org.example.application.usecase.CreateUser;
 import org.example.domain.model.UserModel;
@@ -19,16 +20,19 @@ public class UserController {
     private final UserService userService;
     private final CreateUser createUser;
     private final UserDtoMapper userDtoMapper;
+    private final CurrentUserService currentUserService;
 
     @Autowired
     public UserController(
             UserService userService,
             CreateUser createUser,
-            UserDtoMapper userDtoMapper
+            UserDtoMapper userDtoMapper,
+            CurrentUserService currentUserService
     ) {
         this.userService = userService;
         this.createUser = createUser;
         this.userDtoMapper = userDtoMapper;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping
@@ -38,6 +42,17 @@ public class UserController {
                 .map(userDtoMapper::toResponse)
                 .collect(Collectors.toList());
     }
+
+
+    @GetMapping("/me")
+    public CreateUserResponse getCurrentUser(
+            org.springframework.security.core.Authentication authentication
+    ) {
+        UserModel user = currentUserService.getCurrentUser(authentication);
+
+        return userDtoMapper.toResponse(user);
+    }
+
 
     @GetMapping("/{id}")
     public CreateUserResponse getById(@PathVariable Long id) {

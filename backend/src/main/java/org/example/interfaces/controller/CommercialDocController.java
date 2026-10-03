@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/docs")
+@RequestMapping("/api/commercial-docs")
 public class CommercialDocController {
 
     private final CommercialDocService commercialDocService;

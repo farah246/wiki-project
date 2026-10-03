@@ -39,4 +39,8 @@ public class UserService {
     public Optional<UserModel> getByEmail(String email) {
         return userGateway.findByEmail(email);
     }
+
+    public Optional<UserModel> getByClerkUserId(String clerkUserId) {
+        return userGateway.findByClerkUserId(clerkUserId);
+    }
 }

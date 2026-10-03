@@ -32,10 +32,10 @@ public class CommercialDocEntityMapper {
                 entityObject.getUser() != null
                         ? new org.example.domain.model.UserModel(
                         entityObject.getUser().getId(),
+                        entityObject.getUser().getClerkUserId(),
                         entityObject.getUser().getUsername(),
                         entityObject.getUser().getEmail(),
                         entityObject.getUser().getRole(),
-                        entityObject.getUser().getPasswordHash(),
                         entityObject.getUser().getCreatedAt(),
                         entityObject.getUser().getUpdatedAt()
                 )

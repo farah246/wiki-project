@@ -35,10 +35,10 @@ public class TechnicalDocEntityMapper {
 
             userModel = new UserModel(
                     user.getId(),
+                    user.getClerkUserId(),
                     user.getUsername(),
                     user.getEmail(),
                     user.getRole(),
-                    user.getPasswordHash(),
                     user.getCreatedAt(),
                     user.getUpdatedAt()
             );

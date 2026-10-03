@@ -62,4 +62,10 @@ public class UserRepositoryGateway implements UserGateway {
         return userRepository.findByEmail(email)
                 .map(userMapper::toDomain);
     }
+
+    @Override
+    public Optional<UserModel> findByClerkUserId(String clerkUserId) {
+        return userRepository.findByClerkUserId(clerkUserId)
+                .map(userMapper::toDomain);
+    }
 }

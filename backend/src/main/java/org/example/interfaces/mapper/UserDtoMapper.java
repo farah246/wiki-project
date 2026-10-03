@@ -3,17 +3,10 @@ package org.example.interfaces.mapper;
 import org.example.domain.model.UserModel;
 import org.example.interfaces.dto.request.CreateUserRequest;
 import org.example.interfaces.dto.response.CreateUserResponse;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
 public class UserDtoMapper {
-
-    private final BCryptPasswordEncoder passwordEncoder;
-
-    public UserDtoMapper() {
-        this.passwordEncoder = new BCryptPasswordEncoder();
-    }
 
     public CreateUserResponse toResponse(UserModel domainObject) {
         return new CreateUserResponse(
@@ -29,10 +22,10 @@ public class UserDtoMapper {
     public UserModel toDomain(CreateUserRequest request) {
         return new UserModel(
                 null,
+                null,
                 request.getUsername(),
                 request.getEmail(),
                 request.getRole() != null ? request.getRole().name() : null,
-                passwordEncoder.encode(request.getPassword()),
                 null,
                 null
         );

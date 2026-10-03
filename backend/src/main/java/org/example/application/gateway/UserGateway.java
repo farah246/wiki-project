@@ -18,4 +18,6 @@ public interface UserGateway {
     Optional<UserModel> findByUsername(String username);
 
     Optional<UserModel> findByEmail(String email);
+
+    Optional<UserModel> findByClerkUserId(String clerkUserId);
 }
