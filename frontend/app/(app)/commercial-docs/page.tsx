@@ -1,11 +1,11 @@
 import Link from "next/link"
 import { Plus } from "lucide-react"
 
-import { getTechnicalDocs } from "@/lib/api/technical-doc"
-import { TechnicalDocList } from "@/components/technical-docs/technical-doc-list"
+import { getCommercialDocs } from "@/lib/api/commercial-doc"
+import { CommercialDocList } from "@/components/commercial-docs/commercial-doc-list"
 
-export default async function TechnicalDocsPage() {
-    const documents = await getTechnicalDocs()
+export default async function CommercialDocsPage() {
+    const documents = await getCommercialDocs()
 
     return (
         <div className="min-h-full">
@@ -13,16 +13,16 @@ export default async function TechnicalDocsPage() {
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-semibold tracking-tight">
-                            Technical documents
+                            Commercial documents
                         </h1>
 
                         <p className="mt-2 text-muted-foreground">
-                            Browse and manage your team's technical knowledge.
+                            Browse and manage your team's commercial knowledge.
                         </p>
                     </div>
 
                     <Link
-                        href="/technical-docs/new"
+                        href="/commercial-docs/new"
                         className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700"
                     >
                         <Plus className="h-4 w-4" />
@@ -31,7 +31,7 @@ export default async function TechnicalDocsPage() {
                 </div>
 
                 <div className="mt-8">
-                    <TechnicalDocList documents={documents} />
+                    <CommercialDocList documents={documents} />
                 </div>
             </div>
         </div>

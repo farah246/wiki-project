@@ -104,3 +104,19 @@ export async function updateTechnicalDoc(
 
     redirect(`/technical-docs/${id}`)
 }
+
+
+export async function deleteTechnicalDoc(id: number) {
+    try {
+        await serverApi.delete(`/api/technical-docs/${id}`)
+    } catch (error) {
+        throw new Error(
+            error instanceof Error
+                ? error.message
+                : "Something went wrong while deleting the document."
+        )
+    }
+
+    revalidatePath("/technical-docs")
+    revalidatePath("/dashboard")
+}
