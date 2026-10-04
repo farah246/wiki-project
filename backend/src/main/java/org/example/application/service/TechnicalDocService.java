@@ -61,9 +61,7 @@ public class TechnicalDocService {
                 technicalDocGateway.save(documentWithUser);
 
         documentEmbeddingService.generateEmbeddingsForTechnicalDoc(
-                savedTechnicalDoc.id(),
-                savedTechnicalDoc.textForEmbedding()
-        );
+                savedTechnicalDoc.id());
 
         return savedTechnicalDoc;
     }
@@ -93,9 +91,7 @@ public class TechnicalDocService {
         embeddingService.deleteEmbeddingsForTechnicalDoc(id);
 
         documentEmbeddingService.generateEmbeddingsForTechnicalDoc(
-                savedDoc.id(),
-                savedDoc.textForEmbedding()
-        );
+                savedDoc.id());
 
         return savedDoc;
     }

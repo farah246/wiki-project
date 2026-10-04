@@ -1,6 +1,7 @@
 package org.example.application.gateway;
 
 import org.example.domain.model.EmbeddingModel;
+import org.example.domain.model.SimilarEmbeddingModel;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,5 +20,9 @@ public interface EmbeddingGateway {
 
     void deleteByCommercialDocId(Long commercialDocId);
 
-    void deleteByProcedureId(Long productDocId);
-}
+    void deleteByProcedureId(Long procedureId);
+
+    List<SimilarEmbeddingModel> findSimilar(
+            float[] queryEmbedding,
+            int limit
+    );}

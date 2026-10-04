@@ -1,6 +1,8 @@
 package org.example.application.service;
 
+import org.example.application.gateway.TechnicalDocGateway;
 import org.example.domain.model.EmbeddingModel;
+import org.example.domain.model.TechnicalDocModel;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -11,19 +13,27 @@ public class DocumentEmbeddingService {
 
     private final DocumentChunkingService chunkingService;
     private final EmbeddingClientService embeddingClientService;
+    private final TechnicalDocGateway technicalDocGateway;
 
     public DocumentEmbeddingService(
             DocumentChunkingService chunkingService,
-            EmbeddingClientService embeddingClientService
+            EmbeddingClientService embeddingClientService,
+            TechnicalDocGateway technicalDocGateway
     ) {
         this.chunkingService = chunkingService;
         this.embeddingClientService = embeddingClientService;
+        this.technicalDocGateway = technicalDocGateway;
     }
 
-    public List<EmbeddingModel> generateEmbeddingsForTechnicalDoc(
-            Long technicalDocId,
-            String text
-    ) {
+    public List<EmbeddingModel> generateEmbeddingsForTechnicalDoc(Long technicalDocId) {
+
+        TechnicalDocModel technicalDoc = technicalDocGateway.findById(technicalDocId)
+                .orElseThrow(() ->
+                        new RuntimeException("Technical document not found: " + technicalDocId)
+                );
+
+        String text = technicalDoc.textForEmbedding();
+
         List<String> chunks = chunkingService.chunkText(text);
         List<EmbeddingModel> embeddings = new ArrayList<>();
 

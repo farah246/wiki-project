@@ -3,8 +3,6 @@ package org.example.application.service;
 import org.example.domain.model.EmbeddingModel;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-
 @Service
 public class EmbeddingClientService {
 
@@ -30,7 +28,11 @@ public class EmbeddingClientService {
     ) {
         double[] embedding = huggingFaceService.getEmbedding(chunkContent);
 
-        String embeddingString = Arrays.toString(embedding);
+        float[] embeddingVector = new float[embedding.length];
+
+        for (int i = 0; i < embedding.length; i++) {
+            embeddingVector[i] = (float) embedding[i];
+        }
 
         EmbeddingModel embeddingModel = new EmbeddingModel(
                 null,
@@ -39,12 +41,24 @@ public class EmbeddingClientService {
                 procedureId,
                 chunkIndex,
                 chunkContent,
-                embeddingString,
+                embeddingVector,
                 MODEL_NAME,
                 null,
                 null
         );
 
         return embeddingService.saveEmbedding(embeddingModel);
+    }
+
+    public float[] generateQueryEmbedding(String query) {
+        double[] embedding = huggingFaceService.getEmbedding(query);
+
+        float[] embeddingVector = new float[embedding.length];
+
+        for (int i = 0; i < embedding.length; i++) {
+            embeddingVector[i] = (float) embedding[i];
+        }
+
+        return embeddingVector;
     }
 }

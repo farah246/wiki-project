@@ -9,7 +9,7 @@ public record EmbeddingModel(
         Long procedureId,
         Integer chunkIndex,
         String chunkContent,
-        String embeddings,
+        float[] embeddings,
         String modelUsed,
         LocalDateTime createdAt,
         LocalDateTime updatedAt

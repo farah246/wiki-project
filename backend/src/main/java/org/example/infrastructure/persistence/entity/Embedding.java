@@ -1,14 +1,24 @@
 package org.example.infrastructure.persistence.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "doc_embeddings")
 public class Embedding {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -31,32 +41,43 @@ public class Embedding {
     @Column(name = "chunk_content", columnDefinition = "TEXT")
     private String chunkContent;
 
-    @Column(name = "embedding", columnDefinition = "TEXT", nullable = false)
-    private String embeddings;
+    @JdbcTypeCode(SqlTypes.VECTOR)
+    @Column(name = "embedding", columnDefinition = "vector(384)", nullable = false)
+    private float[] embeddings;
 
     @Column(name = "model_used", length = 100)
     private String modelUsed;
 
     @CreationTimestamp
-    @Column(name = "created_at", columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @Column(
+            name = "created_at",
+            columnDefinition = "TIMESTAMP WITH TIME ZONE"
+    )
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at", columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @Column(
+            name = "updated_at",
+            columnDefinition = "TIMESTAMP WITH TIME ZONE"
+    )
     private LocalDateTime updatedAt;
 
-    // getters, setters, constructors
-    public Embedding() {}
+    public Embedding() {
+    }
 
-    public Embedding(Object document, Integer chunkIndex, String chunkContent, String embeddings, String modelUsed) {
+    public Embedding(
+            Object document,
+            Integer chunkIndex,
+            String chunkContent,
+            float[] embeddings,
+            String modelUsed
+    ) {
         setDocument(document);
         this.chunkIndex = chunkIndex;
         this.chunkContent = chunkContent;
         this.embeddings = embeddings;
         this.modelUsed = modelUsed;
     }
-
-// Getters and Setters
 
     public Long getId() {
         return id;
@@ -106,11 +127,11 @@ public class Embedding {
         this.chunkContent = chunkContent;
     }
 
-    public String getEmbeddings() {
+    public float[] getEmbeddings() {
         return embeddings;
     }
 
-    public void setEmbeddings(String embeddings) {
+    public void setEmbeddings(float[] embeddings) {
         this.embeddings = embeddings;
     }
 
@@ -138,16 +159,17 @@ public class Embedding {
         this.updatedAt = updatedAt;
     }
 
-    // Helper method to set the correct document reference
     public void setDocument(Object document) {
         if (document instanceof TechnicalDoc) {
             this.technicalDoc = (TechnicalDoc) document;
             this.commercialDoc = null;
             this.procedure = null;
+
         } else if (document instanceof CommercialDoc) {
             this.commercialDoc = (CommercialDoc) document;
             this.technicalDoc = null;
             this.procedure = null;
+
         } else if (document instanceof Procedure) {
             this.procedure = (Procedure) document;
             this.technicalDoc = null;
@@ -155,12 +177,19 @@ public class Embedding {
         }
     }
 
-    // Getter to retrieve the document (returns the non-null reference)
     public Object getDocument() {
-        if (technicalDoc != null) return technicalDoc;
-        if (commercialDoc != null) return commercialDoc;
-        if (procedure != null) return procedure;
+        if (technicalDoc != null) {
+            return technicalDoc;
+        }
+
+        if (commercialDoc != null) {
+            return commercialDoc;
+        }
+
+        if (procedure != null) {
+            return procedure;
+        }
+
         return null;
     }
 }
-// DocumentType.java

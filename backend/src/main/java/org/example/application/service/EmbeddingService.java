@@ -2,6 +2,7 @@ package org.example.application.service;
 
 import org.example.application.gateway.EmbeddingGateway;
 import org.example.domain.model.EmbeddingModel;
+import org.example.domain.model.SimilarEmbeddingModel;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -42,5 +43,12 @@ public class EmbeddingService {
 
     public void deleteEmbeddingsForProcedure(Long procedureId) {
         embeddingGateway.deleteByProcedureId(procedureId);
+    }
+
+    public List<SimilarEmbeddingModel> findSimilar(
+            float[] queryEmbedding,
+            int limit
+    ) {
+        return embeddingGateway.findSimilar(queryEmbedding, limit);
     }
 }
