@@ -2,6 +2,7 @@ package org.example.interfaces.controller;
 
 import org.example.application.service.TechnicalDocService;
 import org.example.domain.model.TechnicalDocModel;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,17 +19,20 @@ public class TechnicalDocController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('DEVELOPER', 'SALES', 'MANAGER', 'ADMIN')")
     public List<TechnicalDocModel> getAll() {
         return technicalDocService.getAllTechnicalDocs();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('DEVELOPER', 'SALES', 'MANAGER', 'ADMIN')")
     public TechnicalDocModel getById(@PathVariable Long id) {
         return technicalDocService.getTechnicalDocById(id)
                 .orElseThrow(() -> new RuntimeException("TechnicalDoc not found"));
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('DEVELOPER', 'MANAGER', 'ADMIN')")
     public TechnicalDocModel create(
             @RequestBody TechnicalDocModel technicalDoc,
             Authentication authentication
@@ -40,6 +44,7 @@ public class TechnicalDocController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('DEVELOPER', 'MANAGER', 'ADMIN')")
     public TechnicalDocModel update(
             @PathVariable Long id,
             @RequestBody TechnicalDocModel technicalDoc
@@ -48,6 +53,7 @@ public class TechnicalDocController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(@PathVariable Long id) {
         technicalDocService.deleteTechnicalDoc(id);
     }

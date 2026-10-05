@@ -38,7 +38,7 @@ public class TechnicalDocEntityMapper {
                     user.getClerkUserId(),
                     user.getUsername(),
                     user.getEmail(),
-                    user.getRole(),
+                    user.getRole() != null ? user.getRole().name() : null,
                     user.getCreatedAt(),
                     user.getUpdatedAt()
             );

@@ -35,7 +35,7 @@ public class CommercialDocEntityMapper {
                         entityObject.getUser().getClerkUserId(),
                         entityObject.getUser().getUsername(),
                         entityObject.getUser().getEmail(),
-                        entityObject.getUser().getRole(),
+                        entityObject.getUser().getRole() != null ? entityObject.getUser().getRole().name() : null,
                         entityObject.getUser().getCreatedAt(),
                         entityObject.getUser().getUpdatedAt()
                 )

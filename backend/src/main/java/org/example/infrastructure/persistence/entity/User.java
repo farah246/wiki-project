@@ -23,7 +23,9 @@ public class User {
     @Column(unique = true)
     private String email;
 
-    private String role;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -33,7 +35,7 @@ public class User {
 
     public User() {}
 
-    public User(String clerkUserId, String username, String email, String role) {
+    public User(String clerkUserId, String username, String email, Role role) {
         this.clerkUserId = clerkUserId;
         this.username = username;
         this.email = email;
@@ -72,11 +74,11 @@ public class User {
         this.email = email;
     }
 
-    public String getRole() {
+    public Role getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(Role role) {
         this.role = role;
     }
 

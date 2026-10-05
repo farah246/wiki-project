@@ -2,6 +2,7 @@ package org.example.interfaces.controller;
 
 import org.example.application.service.ProcedureService;
 import org.example.domain.model.ProcedureModel;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,11 +19,13 @@ public class ProcedureController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('DEVELOPER', 'SALES', 'MANAGER', 'ADMIN')")
     public List<ProcedureModel> getAll() {
         return procedureService.getAllProcedures();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('DEVELOPER', 'SALES', 'MANAGER', 'ADMIN')")
     public ProcedureModel getById(@PathVariable Long id) {
         return procedureService.getProcedureById(id)
                 .orElseThrow(() ->
@@ -30,6 +33,7 @@ public class ProcedureController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('DEVELOPER', 'MANAGER', 'ADMIN')")
     public ProcedureModel create(
             @RequestBody ProcedureModel procedure,
             Authentication authentication
@@ -41,6 +45,7 @@ public class ProcedureController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('DEVELOPER', 'MANAGER', 'ADMIN')")
     public ProcedureModel update(
             @PathVariable Long id,
             @RequestBody ProcedureModel procedure
@@ -49,6 +54,7 @@ public class ProcedureController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(@PathVariable Long id) {
         procedureService.deleteProcedure(id);
     }

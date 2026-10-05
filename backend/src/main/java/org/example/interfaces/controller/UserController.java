@@ -8,8 +8,10 @@ import org.example.interfaces.dto.request.CreateUserRequest;
 import org.example.interfaces.dto.response.CreateUserResponse;
 import org.example.interfaces.mapper.UserDtoMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,6 +38,7 @@ public class UserController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public List<CreateUserResponse> getAll() {
         return userService.getAllUsers()
                 .stream()
@@ -43,8 +46,8 @@ public class UserController {
                 .collect(Collectors.toList());
     }
 
-
     @GetMapping("/me")
+    @PreAuthorize("hasAnyRole('DEVELOPER', 'SALES', 'MANAGER', 'ADMIN')")
     public CreateUserResponse getCurrentUser(
             org.springframework.security.core.Authentication authentication
     ) {
@@ -53,8 +56,8 @@ public class UserController {
         return userDtoMapper.toResponse(user);
     }
 
-
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public CreateUserResponse getById(@PathVariable Long id) {
         UserModel user = userService.getUserById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -63,7 +66,10 @@ public class UserController {
     }
 
     @PostMapping
-    public CreateUserResponse create(@Valid @RequestBody CreateUserRequest request) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public CreateUserResponse create(
+            @Valid @RequestBody CreateUserRequest request
+    ) {
         UserModel userModel = userDtoMapper.toDomain(request);
         UserModel createdUser = createUser.execute(userModel);
 
@@ -71,22 +77,31 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(@PathVariable Long id) {
         userService.deleteUser(id);
     }
 
     @GetMapping("/by-username/{username}")
-    public CreateUserResponse getByUsername(@PathVariable String username) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public CreateUserResponse getByUsername(
+            @PathVariable String username
+    ) {
         UserModel user = userService.getByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found by username"));
+                .orElseThrow(() ->
+                        new RuntimeException("User not found by username"));
 
         return userDtoMapper.toResponse(user);
     }
 
     @GetMapping("/by-email/{email}")
-    public CreateUserResponse getByEmail(@PathVariable String email) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public CreateUserResponse getByEmail(
+            @PathVariable String email
+    ) {
         UserModel user = userService.getByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found by email"));
+                .orElseThrow(() ->
+                        new RuntimeException("User not found by email"));
 
         return userDtoMapper.toResponse(user);
     }

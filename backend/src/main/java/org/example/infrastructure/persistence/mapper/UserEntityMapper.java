@@ -1,6 +1,7 @@
 package org.example.infrastructure.persistence.mapper;
 
 import org.example.domain.model.UserModel;
+import org.example.infrastructure.persistence.entity.Role;
 import org.example.infrastructure.persistence.entity.User;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +14,10 @@ public class UserEntityMapper {
         userEntity.setClerkUserId(domainObject.clerkUserId());
         userEntity.setUsername(domainObject.username());
         userEntity.setEmail(domainObject.email());
-        userEntity.setRole(domainObject.role());
+
+        if (domainObject.role() != null) {
+            userEntity.setRole(Role.valueOf(domainObject.role().toUpperCase()));
+        }
 
         return userEntity;
     }
@@ -24,7 +28,9 @@ public class UserEntityMapper {
                 entityObject.getClerkUserId(),
                 entityObject.getUsername(),
                 entityObject.getEmail(),
-                entityObject.getRole(),
+                entityObject.getRole() != null
+                        ? entityObject.getRole().name()
+                        : null,
                 entityObject.getCreatedAt(),
                 entityObject.getUpdatedAt()
         );
