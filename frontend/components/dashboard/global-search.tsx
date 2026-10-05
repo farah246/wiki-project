@@ -6,18 +6,29 @@ import {
     ClipboardList,
     FileText,
 } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useState } from "react"
+import { useAuth } from "@clerk/nextjs"
 
 import { SearchBar } from "@/components/ui/search-bar"
-import { TechnicalDoc } from "@/lib/types/technical-doc"
-import { CommercialDoc } from "@/lib/types/commercial-doc"
-import { Procedure } from "@/lib/types/procedure"
+import type { TechnicalDoc } from "@/lib/types/technical-doc"
+import type { CommercialDoc } from "@/lib/types/commercial-doc"
+import type { Procedure } from "@/lib/types/procedure"
 import type { ReactNode } from "react"
+
 type GlobalSearchProps = {
     technicalDocs: TechnicalDoc[]
     commercialDocs: CommercialDoc[]
     procedures: Procedure[]
 }
+
+type SearchResult = {
+    documentId: number
+    documentType: "TECHNICAL" | "COMMERCIAL" | "PROCEDURE"
+    title: string
+    chunkContent: string
+    similarity: number
+}
+
 function HighlightMatch({
                             text,
                             query,
@@ -29,7 +40,10 @@ function HighlightMatch({
         return <>{text}</>
     }
 
-    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    const escapedQuery = query.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+    )
 
     const parts = text.split(
         new RegExp(`(${escapedQuery})`, "gi")
@@ -52,94 +66,127 @@ function HighlightMatch({
         </>
     )
 }
+
 export function GlobalSearch({
                                  technicalDocs,
                                  commercialDocs,
                                  procedures,
                              }: GlobalSearchProps) {
+    const { getToken } = useAuth()
+
     const [query, setQuery] = useState("")
+    const [searchQuery, setSearchQuery] = useState("")
+    const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+    const [isSearching, setIsSearching] = useState(false)
 
-    const normalizedQuery = query.trim().toLowerCase()
+    const handleSearch = async () => {
+        const trimmedQuery = query.trim()
 
-    const results = useMemo(() => {
-        if (!normalizedQuery) {
-            return {
-                technical: [],
-                commercial: [],
-                procedures: [],
+        if (!trimmedQuery) {
+            setSearchQuery("")
+            setSearchResults([])
+            return
+        }
+
+        setSearchQuery(trimmedQuery)
+        setIsSearching(true)
+
+        try {
+            const token = await getToken()
+
+            if (!token) {
+                throw new Error("No authentication token available")
             }
+
+            const response = await fetch(
+                `http://localhost:8080/api/search?query=${encodeURIComponent(trimmedQuery)}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            )
+
+            if (!response.ok) {
+                throw new Error(
+                    `Search request failed: ${response.status}`
+                )
+            }
+
+            const data: SearchResult[] = await response.json()
+
+            setSearchResults(data)
+        } catch (error) {
+            console.error("Semantic search failed:", error)
+            setSearchResults([])
+        } finally {
+            setIsSearching(false)
         }
+    }
 
-        return {
-            technical: technicalDocs
-                .filter((doc) =>
-                    [
-                        doc.title,
-                        doc.content,
-                        doc.codeSnippet,
-                        doc.gitRef,
-                    ]
-                        .filter(Boolean)
-                        .some((value) =>
-                            value!.toLowerCase().includes(normalizedQuery)
-                        )
-                )
-                .slice(0, 5),
+    const getResultConfig = (documentType: SearchResult["documentType"]) => {
+        switch (documentType) {
+            case "COMMERCIAL":
+                return {
+                    label: "Commercial",
+                    hrefPrefix: "/commercial-docs",
+                    icon: <BriefcaseBusiness className="h-4 w-4" />,
+                    headerIcon: (
+                        <BriefcaseBusiness className="h-4 w-4 text-sky-600" />
+                    ),
+                    iconClassName:
+                        "bg-sky-50 text-sky-600 dark:bg-sky-950/30",
+                    headerClassName:
+                        "bg-sky-50/70 dark:bg-sky-950/20",
+                }
 
-            commercial: commercialDocs
-                .filter((doc) =>
-                    [
-                        doc.title,
-                        doc.proposalText,
-                        doc.clientName,
-                    ]
-                        .filter(Boolean)
-                        .some((value) =>
-                            value!.toLowerCase().includes(normalizedQuery)
-                        )
-                )
-                .slice(0, 5),
+            case "PROCEDURE":
+                return {
+                    label: "Procedure",
+                    hrefPrefix: "/procedures",
+                    icon: <ClipboardList className="h-4 w-4" />,
+                    headerIcon: (
+                        <ClipboardList className="h-4 w-4 text-emerald-600" />
+                    ),
+                    iconClassName:
+                        "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30",
+                    headerClassName:
+                        "bg-emerald-50/70 dark:bg-emerald-950/20",
+                }
 
-            procedures: procedures
-                .filter((doc) =>
-                    [
-                        doc.title,
-                        doc.description,
-                        doc.visualModel,
-                    ]
-                        .filter(Boolean)
-                        .some((value) =>
-                            value!.toLowerCase().includes(normalizedQuery)
-                        )
-                )
-                .slice(0, 5),
+            case "TECHNICAL":
+            default:
+                return {
+                    label: "Technical",
+                    hrefPrefix: "/technical-docs",
+                    icon: <FileText className="h-4 w-4" />,
+                    headerIcon: (
+                        <FileText className="h-4 w-4 text-violet-600" />
+                    ),
+                    iconClassName:
+                        "bg-violet-50 text-violet-600 dark:bg-violet-950/30",
+                    headerClassName:
+                        "bg-violet-50/70 dark:bg-violet-950/20",
+                }
         }
-    }, [
-        normalizedQuery,
-        technicalDocs,
-        commercialDocs,
-        procedures,
-    ])
-
-    const totalResults =
-        results.technical.length +
-        results.commercial.length +
-        results.procedures.length
+    }
 
     const renderSection = (
         title: string,
-        count: number,
+        results: SearchResult[],
         icon: ReactNode,
-        children: ReactNode,
         headerClassName: string
     ) => {
-        if (count === 0) {
+        if (results.length === 0) {
             return null
         }
 
         return (
             <div>
-                <div     className={`flex items-center justify-between border-b px-5 py-3 ${headerClassName}`}>
+                <div
+                    className={`flex items-center justify-between border-b px-5 py-3 ${headerClassName}`}
+                >
                     <div className="flex items-center gap-2">
                         {icon}
 
@@ -149,127 +196,111 @@ export function GlobalSearch({
                     </div>
 
                     <span className="text-xs text-muted-foreground">
-                        {count}
+                        {results.length}
                     </span>
                 </div>
 
                 <div className="divide-y">
-                    {children}
+                    {results.map((result) => {
+                        const config = getResultConfig(result.documentType)
+
+                        return (
+                            <Link
+                                key={`${result.documentType}-${result.documentId}`}
+                                href={`${config.hrefPrefix}/${result.documentId}`}
+                                className="flex items-center gap-4 px-5 py-3.5 transition hover:bg-muted/50"
+                            >
+                                <div
+                                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${config.iconClassName}`}
+                                >
+                                    {config.icon}
+                                </div>
+
+                                <div className="min-w-0">
+                                    <p className="truncate text-sm font-medium">
+                                        <HighlightMatch
+                                            text={result.title}
+                                            query={searchQuery}
+                                        />
+                                    </p>
+
+                                    <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                                        {result.chunkContent}
+                                    </p>
+                                </div>
+                            </Link>
+                        )
+                    })}
                 </div>
             </div>
         )
     }
+
+    const technicalResults = searchResults.filter(
+        (result) => result.documentType === "TECHNICAL"
+    )
+
+    const commercialResults = searchResults.filter(
+        (result) => result.documentType === "COMMERCIAL"
+    )
+
+    const procedureResults = searchResults.filter(
+        (result) => result.documentType === "PROCEDURE"
+    )
+
+    const totalResults = searchResults.length
 
     return (
         <div>
             <SearchBar
                 value={query}
                 onChange={setQuery}
+                onSubmit={handleSearch}
                 placeholder="Search your entire knowledge..."
             />
 
-            {normalizedQuery && (
+            {searchQuery && (
                 <div className="mt-4 overflow-hidden rounded-2xl border bg-card shadow-sm">
-                    {totalResults > 0 ? (
+                    {isSearching ? (
+                        <div className="px-5 py-10 text-center">
+                            <p className="text-sm font-medium">
+                                Searching...
+                            </p>
+
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Finding the most relevant documents.
+                            </p>
+                        </div>
+                    ) : totalResults > 0 ? (
                         <>
                             <div className="border-b px-5 py-3">
                                 <p className="text-xs text-muted-foreground">
-                                    Showing results for{" "}
+                                    Showing semantic results for{" "}
                                     <span className="font-medium text-foreground">
-                                        "{query}"
+                                        "{searchQuery}"
                                     </span>
                                 </p>
                             </div>
 
                             {renderSection(
                                 "Technical documents",
-                                results.technical.length,
+                                technicalResults,
                                 <FileText className="h-4 w-4 text-violet-600" />,
-                                results.technical.map((doc) => (
-                                    <Link
-                                        key={`technical-${doc.id}`}
-                                        href={`/technical-docs/${doc.id}`}
-                                        className="flex items-center gap-4 px-5 py-3.5 transition hover:bg-muted/50"
-                                    >
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-950/30">
-                                            <FileText className="h-4 w-4" />
-                                        </div>
-
-                                        <div className="min-w-0">
-                                            <p className="truncate text-sm font-medium">
-                                                <HighlightMatch
-                                                    text={doc.title}
-                                                    query={query}
-                                                />                                            </p>
-
-                                            <p className="mt-0.5 text-xs text-muted-foreground">
-                                                Technical document
-                                            </p>
-                                        </div>
-                                    </Link>
-                                )),
                                 "bg-violet-50/70 dark:bg-violet-950/20"
-
                             )}
 
                             {renderSection(
                                 "Commercial documents",
-                                results.commercial.length,
+                                commercialResults,
                                 <BriefcaseBusiness className="h-4 w-4 text-sky-600" />,
-                                results.commercial.map((doc) => (
-                                    <Link
-                                        key={`commercial-${doc.id}`}
-                                        href={`/commercial-docs/${doc.id}`}
-                                        className="flex items-center gap-4 px-5 py-3.5 transition hover:bg-muted/50"
-                                    >
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600 dark:bg-sky-950/30">
-                                            <BriefcaseBusiness className="h-4 w-4" />
-                                        </div>
-
-                                        <div className="min-w-0">
-                                            <p className="truncate text-sm font-medium">
-                                                <HighlightMatch
-                                                    text={doc.title}
-                                                    query={query}
-                                                />                                            </p>
-
-                                            <p className="mt-0.5 text-xs text-muted-foreground">
-                                                Commercial document
-                                            </p>
-                                        </div>
-                                    </Link>
-                                )),
                                 "bg-sky-50/70 dark:bg-sky-950/20"
                             )}
 
                             {renderSection(
                                 "Procedures",
-                                results.procedures.length,
-                                <ClipboardList className="h-4 w-4 text-violet-600" />,
-                                results.procedures.map((doc) => (
-                                    <Link
-                                        key={`procedure-${doc.id}`}
-                                        href={`/procedures/${doc.id}`}
-                                        className="flex items-center gap-4 px-5 py-3.5 transition hover:bg-muted/50"
-                                    >
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-950/30">
-                                            <ClipboardList className="h-4 w-4" />
-                                        </div>
-
-                                        <div className="min-w-0">
-                                            <p className="truncate text-sm font-medium">
-                                                <HighlightMatch
-                                                    text={doc.title}
-                                                    query={query}
-                                                />                                            </p>
-
-                                            <p className="mt-0.5 text-xs text-muted-foreground">
-                                                Procedure
-                                            </p>
-                                        </div>
-                                    </Link>
-                                )),
-                                "bg-indigo-50/70 dark:bg-indigo-950/20"
+                                procedureResults,
+                                <ClipboardList className="h-4 w-4 text-emerald-600" />,
+                                "bg-emerald-50/70 dark:bg-emerald-950/20"
                             )}
                         </>
                     ) : (
@@ -283,7 +314,7 @@ export function GlobalSearch({
                             </p>
 
                             <p className="mt-1 text-sm text-muted-foreground">
-                                Try a different keyword.
+                                Try a different search.
                             </p>
                         </div>
                     )}

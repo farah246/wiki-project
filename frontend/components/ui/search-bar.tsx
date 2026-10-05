@@ -6,12 +6,14 @@ type SearchBarProps = {
     placeholder?: string
     value?: string
     onChange?: (value: string) => void
+    onSubmit?: () => void
 }
 
 export function SearchBar({
                               placeholder = "Search...",
                               value = "",
                               onChange,
+                              onSubmit,
                           }: SearchBarProps) {
     return (
         <div className="relative w-full">
@@ -21,6 +23,12 @@ export function SearchBar({
                 type="search"
                 value={value}
                 onChange={(event) => onChange?.(event.target.value)}
+                onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                        event.preventDefault()
+                        onSubmit?.()
+                    }
+                }}
                 placeholder={placeholder}
                 className="h-12 w-full rounded-xl border bg-background pl-12 pr-12 text-sm outline-none transition placeholder:text-muted-foreground focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-950 [&::-webkit-search-cancel-button]:appearance-none"
             />
