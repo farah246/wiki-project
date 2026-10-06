@@ -1,7 +1,9 @@
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
+import { auth } from "@clerk/nextjs/server"
 
 import { getCommercialDoc } from "@/lib/api/commercial-doc"
 import { CommercialDocForm } from "@/components/forms/commercial-doc-form"
+import { canEditCommercialDocs } from "@/lib/auth/roles"
 
 type EditCommercialDocPageProps = {
     params: Promise<{
@@ -10,13 +12,24 @@ type EditCommercialDocPageProps = {
 }
 
 export default async function EditCommercialDocPage({
-    params,
-}: EditCommercialDocPageProps) {
+                                                        params,
+                                                    }: EditCommercialDocPageProps) {
     const { id } = await params
     const documentId = Number(id)
 
     if (Number.isNaN(documentId)) {
         notFound()
+    }
+
+    const { sessionClaims } = await auth()
+
+    const role =
+        typeof sessionClaims?.metadata?.role === "string"
+            ? sessionClaims.metadata.role.toUpperCase()
+            : null
+
+    if (!canEditCommercialDocs(role)) {
+        redirect(`/commercial-docs/${id}`)
     }
 
     let document

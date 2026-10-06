@@ -1,11 +1,21 @@
 import Link from "next/link"
 import { Plus } from "lucide-react"
+import { auth } from "@clerk/nextjs/server"
 
 import { getCommercialDocs } from "@/lib/api/commercial-doc"
 import { CommercialDocList } from "@/components/commercial-docs/commercial-doc-list"
-import { SearchBar } from "@/components/ui/search-bar"
+import { canCreateCommercialDocs } from "@/lib/auth/roles"
 
 export default async function CommercialDocsPage() {
+    const { sessionClaims } = await auth()
+
+    const role =
+        typeof sessionClaims?.metadata?.role === "string"
+            ? sessionClaims.metadata.role.toUpperCase()
+            : null
+
+    const canCreate = canCreateCommercialDocs(role)
+
     const documents = await getCommercialDocs()
 
     return (
@@ -22,17 +32,18 @@ export default async function CommercialDocsPage() {
                         </p>
                     </div>
 
-                    <Link
-                        href="/commercial-docs/new"
-                        className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700"
-                    >
-                        <Plus className="h-4 w-4" />
-                        New document
-                    </Link>
+                    {canCreate && (
+                        <Link
+                            href="/commercial-docs/new"
+                            className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700"
+                        >
+                            <Plus className="h-4 w-4" />
+                            New document
+                        </Link>
+                    )}
                 </div>
 
                 <div className="mt-8 space-y-6">
-
                     <CommercialDocList documents={documents} />
                 </div>
             </div>

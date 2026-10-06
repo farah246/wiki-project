@@ -1,8 +1,11 @@
 import Link from "next/link"
+import { redirect } from "next/navigation"
+import { auth } from "@clerk/nextjs/server"
 import { ArrowLeft, FileText } from "lucide-react"
 
 import { getTechnicalDoc } from "@/lib/api/technical-doc"
 import { TechnicalDocForm } from "@/components/forms/technical-doc-form"
+import { canEditTechnicalDocs } from "@/lib/auth/roles"
 
 type EditTechnicalDocPageProps = {
     params: Promise<{
@@ -11,9 +14,20 @@ type EditTechnicalDocPageProps = {
 }
 
 export default async function EditTechnicalDocPage({
-    params,
-}: EditTechnicalDocPageProps) {
+                                                       params,
+                                                   }: EditTechnicalDocPageProps) {
     const { id } = await params
+
+    const { sessionClaims } = await auth()
+
+    const role =
+        typeof sessionClaims?.metadata?.role === "string"
+            ? sessionClaims.metadata.role.toUpperCase()
+            : null
+
+    if (!canEditTechnicalDocs(role)) {
+        redirect(`/technical-docs/${id}`)
+    }
 
     const document = await getTechnicalDoc(Number(id))
 
@@ -51,4 +65,3 @@ export default async function EditTechnicalDocPage({
         </div>
     )
 }
-

@@ -7,11 +7,16 @@ import {
     Pencil,
     Trash2,
 } from "lucide-react"
+import { useAuth } from "@clerk/nextjs"
 
 import { deleteProcedure } from "@/actions/procedures"
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
 import { SearchBar } from "@/components/ui/search-bar"
 import type { Procedure } from "@/lib/types/procedure"
+import {
+    canEditProcedures,
+    canDeleteProcedures,
+} from "@/lib/auth/roles"
 
 type ProcedureListProps = {
     procedures: Procedure[]
@@ -21,6 +26,16 @@ export function ProcedureList({
                                   procedures,
                               }: ProcedureListProps) {
     const [searchQuery, setSearchQuery] = useState("")
+
+    const { sessionClaims } = useAuth()
+
+    const role =
+        typeof sessionClaims?.metadata?.role === "string"
+            ? sessionClaims.metadata.role.toUpperCase()
+            : null
+
+    const canEdit = canEditProcedures(role)
+    const canDelete = canDeleteProcedures(role)
 
     const [optimisticProcedures, setOptimisticProcedures] =
         useOptimistic(
@@ -108,26 +123,32 @@ export function ProcedureList({
                                     <FileCog className="h-5 w-5 shrink-0 text-violet-600" />
                                 </div>
 
-                                <div className="mt-5 flex items-center gap-2">
-                                    <Link
-                                        href={`/procedures/${procedure.id}/edit`}
-                                        className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-muted"
-                                    >
-                                        <Pencil className="h-4 w-4" />
-                                        Edit
-                                    </Link>
+                                {(canEdit || canDelete) && (
+                                    <div className="mt-5 flex items-center gap-2">
+                                        {canEdit && (
+                                            <Link
+                                                href={`/procedures/${procedure.id}/edit`}
+                                                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-muted"
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                                Edit
+                                            </Link>
+                                        )}
 
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setProcedureToDelete(procedure)
-                                        }
-                                        className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                        Delete
-                                    </button>
-                                </div>
+                                        {canDelete && (
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setProcedureToDelete(procedure)
+                                                }
+                                                className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                                Delete
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </article>
                         ))}
                     </div>

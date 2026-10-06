@@ -1,10 +1,21 @@
 import Link from "next/link"
 import { Plus } from "lucide-react"
+import { auth } from "@clerk/nextjs/server"
 
 import { getProcedures } from "@/lib/api/procedures"
 import { ProcedureList } from "@/components/procedures/procedure-list"
+import { canCreateProcedures } from "@/lib/auth/roles"
 
 export default async function ProceduresPage() {
+    const { sessionClaims } = await auth()
+
+    const role =
+        typeof sessionClaims?.metadata?.role === "string"
+            ? sessionClaims.metadata.role.toUpperCase()
+            : null
+
+    const canCreate = canCreateProcedures(role)
+
     const procedures = await getProcedures()
 
     return (
@@ -21,17 +32,18 @@ export default async function ProceduresPage() {
                         </p>
                     </div>
 
-                    <Link
-                        href="/procedures/new"
-                        className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700"
-                    >
-                        <Plus className="h-4 w-4" />
-                        New procedure
-                    </Link>
+                    {canCreate && (
+                        <Link
+                            href="/procedures/new"
+                            className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700"
+                        >
+                            <Plus className="h-4 w-4" />
+                            New procedure
+                        </Link>
+                    )}
                 </div>
 
                 <div className="mt-8 space-y-6">
-
                     <ProcedureList procedures={procedures} />
                 </div>
             </div>

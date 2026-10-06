@@ -6,15 +6,24 @@ import {
     SignUpButton,
     SignOutButton,
     UserButton,
-    useUser,
+    useAuth,
 } from "@clerk/nextjs"
 
+import { isAdmin } from "@/lib/auth/roles"
+
 export default function Navigation() {
-    const { isSignedIn } = useUser()
+    const { isSignedIn, sessionClaims } = useAuth()
+
+    const role =
+        typeof sessionClaims?.metadata?.role === "string"
+            ? sessionClaims.metadata.role.toUpperCase()
+            : null
 
     return (
         <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
             <div className="flex h-16 items-center justify-between px-6">
+
+                {/* Logo */}
                 <Link
                     href="/"
                     className="flex items-center gap-2"
@@ -30,6 +39,7 @@ export default function Navigation() {
 
                 {!isSignedIn ? (
                     <div className="flex items-center gap-3">
+
                         <SignInButton>
                             <button className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
                                 Sign In
@@ -41,9 +51,22 @@ export default function Navigation() {
                                 Sign Up
                             </button>
                         </SignUpButton>
+
                     </div>
                 ) : (
                     <div className="flex items-center gap-4">
+
+                        {/* Admin */}
+                        {isAdmin(role) && (
+                            <Link
+                                href="/admin"
+                                className="hidden text-sm font-medium text-violet-600 transition hover:text-violet-700 sm:block"
+                            >
+                                Admin
+                            </Link>
+                        )}
+
+                        {/* Profile */}
                         <Link
                             href="/user-profile"
                             className="hidden text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:block"
@@ -51,6 +74,7 @@ export default function Navigation() {
                             Profile
                         </Link>
 
+                        {/* Sign out */}
                         <SignOutButton>
                             <button className="hidden rounded-lg px-3 py-2 text-sm text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 sm:block">
                                 Sign Out
@@ -58,6 +82,7 @@ export default function Navigation() {
                         </SignOutButton>
 
                         <UserButton />
+
                     </div>
                 )}
             </div>

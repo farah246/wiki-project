@@ -6,6 +6,7 @@ import {
     FileText,
     Sparkles,
 } from "lucide-react"
+import { auth } from "@clerk/nextjs/server"
 
 import { getTechnicalDocs } from "@/lib/api/technical-doc"
 import { getCommercialDocs } from "@/lib/api/commercial-doc"
@@ -13,7 +14,15 @@ import { getProcedures } from "@/lib/api/procedures"
 import { getCurrentUser } from "@/lib/api/users"
 import { DocumentCard } from "@/components/documents/document-card"
 import { GlobalSearch } from "@/components/dashboard/global-search"
+
 export default async function Dashboard() {
+    const { sessionClaims } = await auth()
+
+    const clerkRole =
+        typeof sessionClaims?.metadata?.role === "string"
+            ? sessionClaims.metadata.role.toUpperCase()
+            : null
+
     const [
         technicalDocs,
         commercialDocs,
@@ -58,6 +67,7 @@ export default async function Dashboard() {
                         intelligent workspace.
                     </p>
                 </section>
+
                 {/* Global search */}
                 <section className="mb-8">
                     <GlobalSearch
@@ -140,7 +150,7 @@ export default async function Dashboard() {
                         </p>
 
                         <p className="mt-5 text-2xl font-semibold capitalize">
-                            {currentUser.role.toLowerCase()}
+                            {clerkRole?.toLowerCase() || "unknown"}
                         </p>
 
                         <p className="mt-1 text-sm text-muted-foreground">
@@ -234,7 +244,7 @@ export default async function Dashboard() {
                             </p>
 
                             <p className="mt-2 font-medium capitalize">
-                                {currentUser.role.toLowerCase()}
+                                {clerkRole?.toLowerCase() || "unknown"}
                             </p>
                         </div>
 

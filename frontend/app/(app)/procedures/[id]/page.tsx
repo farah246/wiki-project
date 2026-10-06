@@ -1,8 +1,10 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft, Pencil } from "lucide-react"
+import { auth } from "@clerk/nextjs/server"
 
 import { getProcedure } from "@/lib/api/procedures"
+import { canEditProcedures } from "@/lib/auth/roles"
 
 type ProcedurePageProps = {
     params: Promise<{
@@ -19,6 +21,15 @@ export default async function ProcedurePage({
     if (Number.isNaN(procedureId)) {
         notFound()
     }
+
+    const { sessionClaims } = await auth()
+
+    const role =
+        typeof sessionClaims?.metadata?.role === "string"
+            ? sessionClaims.metadata.role.toUpperCase()
+            : null
+
+    const canEdit = canEditProcedures(role)
 
     let procedure
 
@@ -46,13 +57,15 @@ export default async function ProcedurePage({
                         </h1>
                     </div>
 
-                    <Link
-                        href={`/procedures/${procedure.id}/edit`}
-                        className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition hover:bg-muted"
-                    >
-                        <Pencil className="h-4 w-4" />
-                        Edit
-                    </Link>
+                    {canEdit && (
+                        <Link
+                            href={`/procedures/${procedure.id}/edit`}
+                            className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition hover:bg-muted"
+                        >
+                            <Pencil className="h-4 w-4" />
+                            Edit
+                        </Link>
+                    )}
                 </div>
 
                 <div className="space-y-6">

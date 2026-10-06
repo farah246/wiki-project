@@ -3,7 +3,8 @@ import { NextResponse } from "next/server"
 
 export default clerkMiddleware(async (auth, req) => {
     const { pathname } = req.nextUrl
-    const authObject = await auth ()
+
+    const authObject = await auth()
     const { userId, sessionClaims } = authObject
 
     const isPublicRoute =
@@ -11,15 +12,62 @@ export default clerkMiddleware(async (auth, req) => {
         pathname.startsWith("/sign-in") ||
         pathname.startsWith("/sign-up")
 
-    const isAdminRoute = pathname.startsWith("/admin")
-    const role = sessionClaims?.metadata?.role
+    const role =
+        typeof sessionClaims?.metadata?.role === "string"
+            ? sessionClaims.metadata.role.toUpperCase()
+            : null
 
     if (!userId && !isPublicRoute) {
         return authObject.redirectToSignIn()
     }
 
-    if (isAdminRoute && role !== "admin") {
-        return NextResponse.redirect(new URL("/dashboard", req.url))
+    // Admin routes
+    if (
+        pathname.startsWith("/admin") &&
+        role !== "ADMIN"
+    ) {
+        return NextResponse.redirect(
+            new URL("/", req.url)
+        )
+    }
+
+    // Technical document creation/editing
+    if (
+        (
+            pathname === "/technical-docs/new" ||
+            /^\/technical-docs\/[^/]+\/edit$/.test(pathname)
+        ) &&
+        !["DEVELOPER", "MANAGER", "ADMIN"].includes(role ?? "")
+    ) {
+        return NextResponse.redirect(
+            new URL("/technical-docs", req.url)
+        )
+    }
+
+    // Commercial document creation/editing
+    if (
+        (
+            pathname === "/commercial-docs/new" ||
+            /^\/commercial-docs\/[^/]+\/edit$/.test(pathname)
+        ) &&
+        !["SALES", "MANAGER", "ADMIN"].includes(role ?? "")
+    ) {
+        return NextResponse.redirect(
+            new URL("/commercial-docs", req.url)
+        )
+    }
+
+    // Procedure creation/editing
+    if (
+        (
+            pathname === "/procedures/new" ||
+            /^\/procedures\/[^/]+\/edit$/.test(pathname)
+        ) &&
+        !["DEVELOPER", "MANAGER", "ADMIN"].includes(role ?? "")
+    ) {
+        return NextResponse.redirect(
+            new URL("/procedures", req.url)
+        )
     }
 })
 

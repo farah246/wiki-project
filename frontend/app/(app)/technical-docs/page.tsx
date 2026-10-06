@@ -1,10 +1,21 @@
 import Link from "next/link"
 import { Plus } from "lucide-react"
+import { auth } from "@clerk/nextjs/server"
 
 import { getTechnicalDocs } from "@/lib/api/technical-doc"
 import { TechnicalDocList } from "@/components/technical-docs/technical-doc-list"
+import { canCreateTechnicalDocs } from "@/lib/auth/roles"
 
 export default async function TechnicalDocsPage() {
+    const { sessionClaims } = await auth()
+
+    const role =
+        typeof sessionClaims?.metadata?.role === "string"
+            ? sessionClaims.metadata.role.toUpperCase()
+            : null
+
+    const canCreate = canCreateTechnicalDocs(role)
+
     const documents = await getTechnicalDocs()
 
     return (
@@ -21,17 +32,18 @@ export default async function TechnicalDocsPage() {
                         </p>
                     </div>
 
-                    <Link
-                        href="/technical-docs/new"
-                        className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700"
-                    >
-                        <Plus className="h-4 w-4" />
-                        New document
-                    </Link>
+                    {canCreate && (
+                        <Link
+                            href="/technical-docs/new"
+                            className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700"
+                        >
+                            <Plus className="h-4 w-4" />
+                            New document
+                        </Link>
+                    )}
                 </div>
 
                 <div className="mt-8 space-y-6">
-
                     <TechnicalDocList documents={documents} />
                 </div>
             </div>

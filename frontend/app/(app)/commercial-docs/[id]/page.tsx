@@ -1,9 +1,10 @@
-
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft, Pencil } from "lucide-react"
+import { auth } from "@clerk/nextjs/server"
 
 import { getCommercialDoc } from "@/lib/api/commercial-doc"
+import { canEditCommercialDocs } from "@/lib/auth/roles"
 
 type CommercialDocPageProps = {
     params: Promise<{
@@ -12,14 +13,23 @@ type CommercialDocPageProps = {
 }
 
 export default async function CommercialDocPage({
-    params,
-}: CommercialDocPageProps) {
+                                                    params,
+                                                }: CommercialDocPageProps) {
     const { id } = await params
     const documentId = Number(id)
 
     if (Number.isNaN(documentId)) {
         notFound()
     }
+
+    const { sessionClaims } = await auth()
+
+    const role =
+        typeof sessionClaims?.metadata?.role === "string"
+            ? sessionClaims.metadata.role.toUpperCase()
+            : null
+
+    const canEdit = canEditCommercialDocs(role)
 
     let document
 
@@ -51,41 +61,43 @@ export default async function CommercialDocPage({
                         </p>
                     </div>
 
-                    <Link
-                        href={`/commercial-docs/${document.id}/edit`}
-className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition hover:bg-muted"
-    >
-    <Pencil className="h-4 w-4" />
-    Edit
-    </Link>
-</div>
+                    {canEdit && (
+                        <Link
+                            href={`/commercial-docs/${document.id}/edit`}
+                            className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition hover:bg-muted"
+                        >
+                            <Pencil className="h-4 w-4" />
+                            Edit
+                        </Link>
+                    )}
+                </div>
 
-<article className="rounded-2xl border bg-card">
-    <div className="border-b px-6 py-4">
-        <h2 className="font-semibold">
-            Proposal
-        </h2>
-    </div>
+                <article className="rounded-2xl border bg-card">
+                    <div className="border-b px-6 py-4">
+                        <h2 className="font-semibold">
+                            Proposal
+                        </h2>
+                    </div>
 
-    <div className="px-6 py-6">
-        <div className="whitespace-pre-wrap text-sm leading-7">
-            {document.proposalText}
+                    <div className="px-6 py-6">
+                        <div className="whitespace-pre-wrap text-sm leading-7">
+                            {document.proposalText}
+                        </div>
+                    </div>
+                </article>
+
+                <div className="mt-6 text-xs text-muted-foreground">
+                    <p>
+                        Created:{" "}
+                        {new Date(document.createdAt).toLocaleString()}
+                    </p>
+
+                    <p className="mt-1">
+                        Updated:{" "}
+                        {new Date(document.updatedAt).toLocaleString()}
+                    </p>
+                </div>
+            </div>
         </div>
-    </div>
-</article>
-
-<div className="mt-6 text-xs text-muted-foreground">
-    <p>
-        Created:{" "}
-        {new Date(document.createdAt).toLocaleString()}
-    </p>
-
-    <p className="mt-1">
-        Updated:{" "}
-        {new Date(document.updatedAt).toLocaleString()}
-    </p>
-</div>
-</div>
-</div>
-)
+    )
 }
