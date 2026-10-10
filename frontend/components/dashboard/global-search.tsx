@@ -79,6 +79,7 @@ export function GlobalSearch({
     const [searchQuery, setSearchQuery] = useState("")
     const [searchResults, setSearchResults] = useState<SearchResult[]>([])
     const [isSearching, setIsSearching] = useState(false)
+    const [searchError, setSearchError] = useState<string | null>(null)
 
     const handleSearch = async () => {
         const trimmedQuery = query.trim()
@@ -86,10 +87,12 @@ export function GlobalSearch({
         if (!trimmedQuery) {
             setSearchQuery("")
             setSearchResults([])
+            setSearchError(null)
             return
         }
 
         setSearchQuery(trimmedQuery)
+        setSearchError(null)
         setIsSearching(true)
 
         try {
@@ -109,6 +112,14 @@ export function GlobalSearch({
                 }
             )
 
+            if (response.status === 503) {
+                setSearchResults([])
+                setSearchError(
+                    "The search service isn't responding. Try again in a moment."
+                )
+                return
+            }
+
             if (!response.ok) {
                 throw new Error(
                     `Search request failed: ${response.status}`
@@ -121,6 +132,7 @@ export function GlobalSearch({
         } catch (error) {
             console.error("Semantic search failed:", error)
             setSearchResults([])
+            setSearchError("The search failed. Try again.")
         } finally {
             setIsSearching(false)
         }
@@ -270,6 +282,16 @@ export function GlobalSearch({
 
                             <p className="mt-1 text-sm text-muted-foreground">
                                 Finding the most relevant documents.
+                            </p>
+                        </div>
+                    ) : searchError ? (
+                        <div className="px-5 py-10 text-center">
+                            <p className="text-sm font-medium">
+                                Search unavailable
+                            </p>
+
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                {searchError}
                             </p>
                         </div>
                     ) : totalResults > 0 ? (

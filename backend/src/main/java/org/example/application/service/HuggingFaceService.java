@@ -1,6 +1,7 @@
 package org.example.application.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.application.exception.EmbeddingUnavailableException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -11,7 +12,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
-
+import org.springframework.web.client.RestClientException;
 @Service
 public class HuggingFaceService {
 
@@ -66,7 +67,11 @@ public class HuggingFaceService {
 
             return embedding;
 
-        } catch (Exception e) {
+        }catch (RestClientException e) {                      // new: HTTP errors, 402, timeouts, connection refused
+            throw new EmbeddingUnavailableException(
+                    "Embedding service unavailable: " + e.getMessage(), e
+            );
+        }catch (Exception e) {
             throw new RuntimeException(
                     "Embedding extraction failed: " + e.getMessage(), e
             );
