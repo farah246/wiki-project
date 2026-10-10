@@ -19,15 +19,17 @@ public class HuggingFaceService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // Use a valid model that supports feature extraction via API
-    private final String apiUrl =
-            "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5";
+    @Value("${embedding.api.url:https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5}")
+    private String apiUrl;
 
-    @Value("${huggingface.api.token}")
+    @Value("${huggingface.api.token:}")
     private String HF_API_TOKEN;
 
     public double[] getEmbedding(String inputText) {
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + HF_API_TOKEN);
+        if (HF_API_TOKEN != null && !HF_API_TOKEN.isBlank()) {
+            headers.set("Authorization", "Bearer " + HF_API_TOKEN);
+        }
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
