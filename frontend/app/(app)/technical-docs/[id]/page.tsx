@@ -3,6 +3,8 @@ import { ArrowLeft, Code2, Edit, FileText, GitBranch } from "lucide-react"
 import { auth } from "@clerk/nextjs/server"
 
 import { getTechnicalDoc } from "@/lib/api/technical-doc"
+import { getTechnicalDocHistory } from "@/lib/api/doc-history"
+import { DocHistory } from "@/components/documents/doc-history"
 import { canEditTechnicalDocs } from "@/lib/auth/roles"
 
 type TechnicalDocPageProps = {
@@ -26,6 +28,7 @@ export default async function TechnicalDocPage({
     const canEdit = canEditTechnicalDocs(role)
 
     const technicalDoc = await getTechnicalDoc(Number(id))
+    const history = await getTechnicalDocHistory(Number(id))
 
     return (
         <div className="min-h-full">
@@ -120,6 +123,8 @@ export default async function TechnicalDocPage({
                             </div>
                         </section>
                     )}
+
+                    <DocHistory entries={history} />
                 </div>
             </div>
         </div>

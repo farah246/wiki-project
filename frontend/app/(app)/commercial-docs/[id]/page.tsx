@@ -4,6 +4,8 @@ import { ArrowLeft, Pencil } from "lucide-react"
 import { auth } from "@clerk/nextjs/server"
 
 import { getCommercialDoc } from "@/lib/api/commercial-doc"
+import { getCommercialDocHistory } from "@/lib/api/doc-history"
+import { DocHistory } from "@/components/documents/doc-history"
 import { canEditCommercialDocs } from "@/lib/auth/roles"
 
 type CommercialDocPageProps = {
@@ -38,6 +40,8 @@ export default async function CommercialDocPage({
     } catch {
         notFound()
     }
+
+    const history = await getCommercialDocHistory(documentId)
 
     return (
         <div className="min-h-full">
@@ -85,6 +89,10 @@ export default async function CommercialDocPage({
                         </div>
                     </div>
                 </article>
+
+                <div className="mt-6">
+                    <DocHistory entries={history} />
+                </div>
 
                 <div className="mt-6 text-xs text-muted-foreground">
                     <p>

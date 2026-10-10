@@ -3,11 +3,13 @@ package org.example.application.service;
 import org.example.application.gateway.TechnicalDocGateway;
 import org.example.domain.model.EmbeddingModel;
 import org.example.domain.model.TechnicalDocModel;
+import org.example.domain.enums.DocumentType;
 import org.example.domain.model.UserModel;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,17 +20,20 @@ public class TechnicalDocService {
     private final EmbeddingService embeddingService;
     private final DocumentEmbeddingService documentEmbeddingService;
     private final CurrentUserService currentUserService;
+    private final DocHistoryService docHistoryService;
 
     public TechnicalDocService(
             TechnicalDocGateway technicalDocGateway,
             DocumentEmbeddingService documentEmbeddingService,
             EmbeddingService embeddingService,
-            CurrentUserService currentUserService
+            CurrentUserService currentUserService,
+            DocHistoryService docHistoryService
     ) {
         this.technicalDocGateway = technicalDocGateway;
         this.documentEmbeddingService = documentEmbeddingService;
         this.embeddingService = embeddingService;
         this.currentUserService = currentUserService;
+        this.docHistoryService = docHistoryService;
     }
 
     public List<TechnicalDocModel> getAllTechnicalDocs() {
@@ -60,6 +65,13 @@ public class TechnicalDocService {
         TechnicalDocModel savedTechnicalDoc =
                 technicalDocGateway.save(documentWithUser);
 
+        docHistoryService.recordCreated(
+                DocumentType.TECHNICAL_DOC,
+                savedTechnicalDoc.id(),
+                savedTechnicalDoc.title(),
+                currentUser
+        );
+
         documentEmbeddingService.generateEmbeddingsForTechnicalDoc(
                 savedTechnicalDoc.id());
 
@@ -69,7 +81,8 @@ public class TechnicalDocService {
     @Transactional
     public TechnicalDocModel updateTechnicalDoc(
             Long id,
-            TechnicalDocModel technicalDoc
+            TechnicalDocModel technicalDoc,
+            Authentication authentication
     ) {
 
         TechnicalDocModel existingDoc = technicalDocGateway.findById(id)
@@ -88,6 +101,13 @@ public class TechnicalDocService {
 
         TechnicalDocModel savedDoc = technicalDocGateway.save(updatedDoc);
 
+        docHistoryService.recordUpdated(
+                DocumentType.TECHNICAL_DOC,
+                id,
+                currentUserService.getCurrentUser(authentication),
+                changedFields(existingDoc, updatedDoc)
+        );
+
         embeddingService.deleteEmbeddingsForTechnicalDoc(id);
 
         documentEmbeddingService.generateEmbeddingsForTechnicalDoc(
@@ -97,7 +117,19 @@ public class TechnicalDocService {
     }
 
 
-    public void deleteTechnicalDoc(Long id) {
+    @Transactional
+    public void deleteTechnicalDoc(Long id, Authentication authentication) {
+        UserModel currentUser =
+                currentUserService.getCurrentUser(authentication);
+
+        technicalDocGateway.findById(id).ifPresent(doc ->
+                docHistoryService.recordDeleted(
+                        DocumentType.TECHNICAL_DOC,
+                        id,
+                        doc.title(),
+                        currentUser
+                ));
+
         List<EmbeddingModel> embeddings = embeddingService.getAllEmbeddings();
 
         embeddings.stream()
@@ -107,6 +139,25 @@ public class TechnicalDocService {
         technicalDocGateway.deleteById(id);
     }
 
+    private List<String> changedFields(
+            TechnicalDocModel before,
+            TechnicalDocModel after
+    ) {
+        List<String> fields = new ArrayList<>();
 
+        if (DocHistoryService.changed(before.title(), after.title())) {
+            fields.add("title");
+        }
+        if (DocHistoryService.changed(before.content(), after.content())) {
+            fields.add("content");
+        }
+        if (DocHistoryService.changed(before.codeSnippet(), after.codeSnippet())) {
+            fields.add("code snippet");
+        }
+        if (DocHistoryService.changed(before.gitRef(), after.gitRef())) {
+            fields.add("git reference");
+        }
 
+        return fields;
+    }
 }

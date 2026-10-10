@@ -3,11 +3,13 @@ package org.example.application.service;
 import org.example.application.gateway.CommercialDocGateway;
 import org.example.domain.model.CommercialDocModel;
 import org.example.domain.model.EmbeddingModel;
+import org.example.domain.enums.DocumentType;
 import org.example.domain.model.UserModel;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,17 +20,20 @@ public class CommercialDocService {
     private final EmbeddingService embeddingService;
     private final DocumentEmbeddingService documentEmbeddingService;
     private final CurrentUserService currentUserService;
+    private final DocHistoryService docHistoryService;
 
     public CommercialDocService(
             CommercialDocGateway commercialDocGateway,
             EmbeddingService embeddingService,
             DocumentEmbeddingService documentEmbeddingService,
-            CurrentUserService currentUserService
+            CurrentUserService currentUserService,
+            DocHistoryService docHistoryService
     ) {
         this.commercialDocGateway = commercialDocGateway;
         this.embeddingService = embeddingService;
         this.documentEmbeddingService = documentEmbeddingService;
         this.currentUserService = currentUserService;
+        this.docHistoryService = docHistoryService;
     }
 
     public List<CommercialDocModel> getAllDocs() {
@@ -59,6 +64,13 @@ public class CommercialDocService {
         CommercialDocModel savedCommercialDoc =
                 commercialDocGateway.save(documentWithUser);
 
+        docHistoryService.recordCreated(
+                DocumentType.COMMERCIAL_DOC,
+                savedCommercialDoc.id(),
+                savedCommercialDoc.title(),
+                currentUser
+        );
+
         documentEmbeddingService.generateEmbeddingsForCommercialDoc(
                 savedCommercialDoc.id(),
                 savedCommercialDoc.textForEmbedding()
@@ -70,7 +82,8 @@ public class CommercialDocService {
     @Transactional
     public CommercialDocModel updateDoc(
             Long id,
-            CommercialDocModel doc
+            CommercialDocModel doc,
+            Authentication authentication
     ) {
         CommercialDocModel existingDoc =
                 commercialDocGateway.findById(id)
@@ -90,6 +103,13 @@ public class CommercialDocService {
         CommercialDocModel savedDoc =
                 commercialDocGateway.save(updatedDoc);
 
+        docHistoryService.recordUpdated(
+                DocumentType.COMMERCIAL_DOC,
+                id,
+                currentUserService.getCurrentUser(authentication),
+                changedFields(existingDoc, updatedDoc)
+        );
+
         List<EmbeddingModel> embeddings =
                 embeddingService.getAllEmbeddings();
 
@@ -108,7 +128,19 @@ public class CommercialDocService {
         return savedDoc;
     }
 
-    public void deleteDoc(Long id) {
+    @Transactional
+    public void deleteDoc(Long id, Authentication authentication) {
+        UserModel currentUser =
+                currentUserService.getCurrentUser(authentication);
+
+        commercialDocGateway.findById(id).ifPresent(doc ->
+                docHistoryService.recordDeleted(
+                        DocumentType.COMMERCIAL_DOC,
+                        id,
+                        doc.title(),
+                        currentUser
+                ));
+
         List<EmbeddingModel> embeddings =
                 embeddingService.getAllEmbeddings();
 
@@ -120,5 +152,24 @@ public class CommercialDocService {
                                 embedding.id()));
 
         commercialDocGateway.deleteById(id);
+    }
+
+    private List<String> changedFields(
+            CommercialDocModel before,
+            CommercialDocModel after
+    ) {
+        List<String> fields = new ArrayList<>();
+
+        if (DocHistoryService.changed(before.title(), after.title())) {
+            fields.add("title");
+        }
+        if (DocHistoryService.changed(before.proposalText(), after.proposalText())) {
+            fields.add("proposal");
+        }
+        if (DocHistoryService.changed(before.clientName(), after.clientName())) {
+            fields.add("client name");
+        }
+
+        return fields;
     }
 }

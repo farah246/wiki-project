@@ -3,11 +3,13 @@ package org.example.application.service;
 import org.example.application.gateway.ProcedureGateway;
 import org.example.domain.model.EmbeddingModel;
 import org.example.domain.model.ProcedureModel;
+import org.example.domain.enums.DocumentType;
 import org.example.domain.model.UserModel;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,17 +20,20 @@ public class ProcedureService {
     private final EmbeddingService embeddingService;
     private final DocumentEmbeddingService documentEmbeddingService;
     private final CurrentUserService currentUserService;
+    private final DocHistoryService docHistoryService;
 
     public ProcedureService(
             ProcedureGateway procedureGateway,
             EmbeddingService embeddingService,
             DocumentEmbeddingService documentEmbeddingService,
-            CurrentUserService currentUserService
+            CurrentUserService currentUserService,
+            DocHistoryService docHistoryService
     ) {
         this.procedureGateway = procedureGateway;
         this.embeddingService = embeddingService;
         this.documentEmbeddingService = documentEmbeddingService;
         this.currentUserService = currentUserService;
+        this.docHistoryService = docHistoryService;
     }
 
     public List<ProcedureModel> getAllProcedures() {
@@ -59,6 +64,13 @@ public class ProcedureService {
         ProcedureModel savedProcedure =
                 procedureGateway.save(procedureWithUser);
 
+        docHistoryService.recordCreated(
+                DocumentType.PROCEDURE,
+                savedProcedure.id(),
+                savedProcedure.title(),
+                currentUser
+        );
+
         documentEmbeddingService.generateEmbeddingsForProcedure(
                 savedProcedure.id(),
                 savedProcedure.textForEmbedding()
@@ -70,7 +82,8 @@ public class ProcedureService {
     @Transactional
     public ProcedureModel updateProcedure(
             Long id,
-            ProcedureModel procedure
+            ProcedureModel procedure,
+            Authentication authentication
     ) {
         ProcedureModel existingProcedure =
                 procedureGateway.findById(id)
@@ -90,6 +103,13 @@ public class ProcedureService {
         ProcedureModel savedProcedure =
                 procedureGateway.save(updatedProcedure);
 
+        docHistoryService.recordUpdated(
+                DocumentType.PROCEDURE,
+                id,
+                currentUserService.getCurrentUser(authentication),
+                changedFields(existingProcedure, updatedProcedure)
+        );
+
         List<EmbeddingModel> embeddings =
                 embeddingService.getAllEmbeddings();
 
@@ -108,7 +128,19 @@ public class ProcedureService {
         return savedProcedure;
     }
 
-    public void deleteProcedure(Long id) {
+    @Transactional
+    public void deleteProcedure(Long id, Authentication authentication) {
+        UserModel currentUser =
+                currentUserService.getCurrentUser(authentication);
+
+        procedureGateway.findById(id).ifPresent(procedure ->
+                docHistoryService.recordDeleted(
+                        DocumentType.PROCEDURE,
+                        id,
+                        procedure.title(),
+                        currentUser
+                ));
+
         List<EmbeddingModel> embeddings =
                 embeddingService.getAllEmbeddings();
 
@@ -120,5 +152,24 @@ public class ProcedureService {
                                 embedding.id()));
 
         procedureGateway.deleteById(id);
+    }
+
+    private List<String> changedFields(
+            ProcedureModel before,
+            ProcedureModel after
+    ) {
+        List<String> fields = new ArrayList<>();
+
+        if (DocHistoryService.changed(before.title(), after.title())) {
+            fields.add("title");
+        }
+        if (DocHistoryService.changed(before.description(), after.description())) {
+            fields.add("description");
+        }
+        if (DocHistoryService.changed(before.visualModel(), after.visualModel())) {
+            fields.add("visual model");
+        }
+
+        return fields;
     }
 }

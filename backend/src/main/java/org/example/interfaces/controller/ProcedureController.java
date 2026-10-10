@@ -48,14 +48,22 @@ public class ProcedureController {
     @PreAuthorize("hasAnyRole('DEVELOPER', 'MANAGER', 'ADMIN')")
     public ProcedureModel update(
             @PathVariable Long id,
-            @RequestBody ProcedureModel procedure
+            @RequestBody ProcedureModel procedure,
+            Authentication authentication
     ) {
-        return procedureService.updateProcedure(id, procedure);
+        return procedureService.updateProcedure(
+                id,
+                procedure,
+                authentication
+        );
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public void delete(@PathVariable Long id) {
-        procedureService.deleteProcedure(id);
+    public void delete(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        procedureService.deleteProcedure(id, authentication);
     }
 }

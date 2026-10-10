@@ -4,6 +4,8 @@ import { ArrowLeft, Pencil } from "lucide-react"
 import { auth } from "@clerk/nextjs/server"
 
 import { getProcedure } from "@/lib/api/procedures"
+import { getProcedureHistory } from "@/lib/api/doc-history"
+import { DocHistory } from "@/components/documents/doc-history"
 import { canEditProcedures } from "@/lib/auth/roles"
 
 type ProcedurePageProps = {
@@ -38,6 +40,8 @@ export default async function ProcedurePage({
     } catch {
         notFound()
     }
+
+    const history = await getProcedureHistory(procedureId)
 
     return (
         <div className="min-h-full">
@@ -98,6 +102,10 @@ export default async function ProcedurePage({
                             </div>
                         </article>
                     )}
+                </div>
+
+                <div className="mt-6">
+                    <DocHistory entries={history} />
                 </div>
 
                 <div className="mt-6 text-xs text-muted-foreground">

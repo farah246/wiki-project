@@ -1,11 +1,15 @@
 package org.example.interfaces.controller;
 
 import org.example.application.service.DocHistoryService;
+import org.example.domain.enums.DocumentType;
 import org.example.domain.model.DocHistoryModel;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// Read-only. History rows are written by the document services only,
+// so there is no public POST/DELETE (it would let anyone forge the audit trail).
 @RestController
 @RequestMapping("/api/doc-history")
 public class DocHistoryController {
@@ -17,23 +21,29 @@ public class DocHistoryController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public List<DocHistoryModel> getAll() {
         return docHistoryService.getAllHistories();
     }
 
-    @GetMapping("/{id}")
-    public DocHistoryModel getById(@PathVariable Long id) {
-        return docHistoryService.getHistoryById(id)
-                .orElseThrow(() -> new RuntimeException("DocHistory not found"));
+    @GetMapping("/technical-docs/{id}")
+    @PreAuthorize("hasAnyRole('DEVELOPER', 'SALES', 'MANAGER', 'ADMIN')")
+    public List<DocHistoryModel> getTechnicalDocHistory(@PathVariable Long id) {
+        return docHistoryService.getHistoryForDocument(
+                DocumentType.TECHNICAL_DOC, id);
     }
 
-    @PostMapping
-    public DocHistoryModel create(@RequestBody DocHistoryModel docHistory) {
-        return docHistoryService.saveHistory(docHistory);
+    @GetMapping("/commercial-docs/{id}")
+    @PreAuthorize("hasAnyRole('DEVELOPER', 'SALES', 'MANAGER', 'ADMIN')")
+    public List<DocHistoryModel> getCommercialDocHistory(@PathVariable Long id) {
+        return docHistoryService.getHistoryForDocument(
+                DocumentType.COMMERCIAL_DOC, id);
     }
 
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        docHistoryService.deleteHistory(id);
+    @GetMapping("/procedures/{id}")
+    @PreAuthorize("hasAnyRole('DEVELOPER', 'SALES', 'MANAGER', 'ADMIN')")
+    public List<DocHistoryModel> getProcedureHistory(@PathVariable Long id) {
+        return docHistoryService.getHistoryForDocument(
+                DocumentType.PROCEDURE, id);
     }
 }

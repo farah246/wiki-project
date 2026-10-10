@@ -44,14 +44,18 @@ public class CommercialDocController {
     @PreAuthorize("hasAnyRole('SALES', 'MANAGER', 'ADMIN')")
     public CommercialDocModel updateDoc(
             @PathVariable Long id,
-            @RequestBody CommercialDocModel doc
+            @RequestBody CommercialDocModel doc,
+            Authentication authentication
     ) {
-        return commercialDocService.updateDoc(id, doc);
+        return commercialDocService.updateDoc(id, doc, authentication);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public void deleteDoc(@PathVariable Long id) {
-        commercialDocService.deleteDoc(id);
+    public void deleteDoc(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        commercialDocService.deleteDoc(id, authentication);
     }
 }

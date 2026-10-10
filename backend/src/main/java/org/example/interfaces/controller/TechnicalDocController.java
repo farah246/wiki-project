@@ -47,14 +47,22 @@ public class TechnicalDocController {
     @PreAuthorize("hasAnyRole('DEVELOPER', 'MANAGER', 'ADMIN')")
     public TechnicalDocModel update(
             @PathVariable Long id,
-            @RequestBody TechnicalDocModel technicalDoc
+            @RequestBody TechnicalDocModel technicalDoc,
+            Authentication authentication
     ) {
-        return technicalDocService.updateTechnicalDoc(id, technicalDoc);
+        return technicalDocService.updateTechnicalDoc(
+                id,
+                technicalDoc,
+                authentication
+        );
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public void delete(@PathVariable Long id) {
-        technicalDocService.deleteTechnicalDoc(id);
+    public void delete(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        technicalDocService.deleteTechnicalDoc(id, authentication);
     }
 }

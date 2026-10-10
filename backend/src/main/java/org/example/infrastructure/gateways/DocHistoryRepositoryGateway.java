@@ -1,11 +1,13 @@
 package org.example.infrastructure.gateways;
 
 import org.example.application.gateway.DocHistoryGateway;
+import org.example.domain.enums.DocumentType;
 import org.example.domain.model.DocHistoryModel;
 import org.example.infrastructure.persistence.entity.DocHistory;
 import org.example.infrastructure.persistence.mapper.DocHistoryEntityMapper;
 import org.example.infrastructure.persistence.repository.DocHistoryRepository;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +27,7 @@ public class DocHistoryRepositoryGateway implements DocHistoryGateway {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<DocHistoryModel> findAll() {
         return docHistoryRepository.findAll()
                 .stream()
@@ -33,6 +36,7 @@ public class DocHistoryRepositoryGateway implements DocHistoryGateway {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<DocHistoryModel> findById(Long id) {
         return docHistoryRepository.findById(id)
                 .map(docHistoryMapper::toDomain);
@@ -49,5 +53,48 @@ public class DocHistoryRepositoryGateway implements DocHistoryGateway {
     @Override
     public void deleteById(Long id) {
         docHistoryRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DocHistoryModel> findByDocument(
+            DocumentType type,
+            Long docId
+    ) {
+        List<DocHistory> rows = switch (type) {
+            case TECHNICAL_DOC ->
+                    docHistoryRepository
+                            .findByTechnicalDocIdOrderByCreatedAtDescIdDesc(docId);
+            case COMMERCIAL_DOC ->
+                    docHistoryRepository
+                            .findByCommercialDocIdOrderByCreatedAtDescIdDesc(docId);
+            case PROCEDURE ->
+                    docHistoryRepository
+                            .findByProcedureIdOrderByCreatedAtDescIdDesc(docId);
+        };
+
+        return rows.stream()
+                .map(docHistoryMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countByDocument(DocumentType type, Long docId) {
+        return switch (type) {
+            case TECHNICAL_DOC -> docHistoryRepository.countByTechnicalDocId(docId);
+            case COMMERCIAL_DOC -> docHistoryRepository.countByCommercialDocId(docId);
+            case PROCEDURE -> docHistoryRepository.countByProcedureId(docId);
+        };
+    }
+
+    @Override
+    @Transactional
+    public void detachDocument(DocumentType type, Long docId) {
+        switch (type) {
+            case TECHNICAL_DOC -> docHistoryRepository.detachTechnicalDoc(docId);
+            case COMMERCIAL_DOC -> docHistoryRepository.detachCommercialDoc(docId);
+            case PROCEDURE -> docHistoryRepository.detachProcedure(docId);
+        }
     }
 }
