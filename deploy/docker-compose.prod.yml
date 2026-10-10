@@ -2,10 +2,10 @@ services:
   backend:
     image: ${ECR_REGISTRY}/wiki-backend:${IMAGE_TAG}
     env_file: .env
-    environment:                                         # ← add these two lines
+    environment:
       - EMBEDDING_API_URL=http://embeddings:80/embed
     restart: unless-stopped
-  embeddings:                                            # ← add this whole block
+  embeddings:
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8.1
     command: ["--model-id", "BAAI/bge-small-en-v1.5","--max-batch-tokens", "2048",
               "--max-client-batch-size", "4",
@@ -28,5 +28,5 @@ services:
       - backend
       - frontend
     restart: unless-stopped
-volumes:                                                 # ← add at the very end of the file
+volumes:
   tei-data:

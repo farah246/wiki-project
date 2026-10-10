@@ -54,16 +54,21 @@ jobs:
         run: |
           COMPOSE_B64=$(base64 -w0 deploy/docker-compose.prod.yml)
           NGINX_B64=$(base64 -w0 deploy/nginx.conf)
+          LOADENV_B64=$(base64 -w0 deploy/load-env.sh)
 
           PARAMS=$(jq -n \
             --arg reg "$REG" --arg tag "${{ github.sha }}" --arg region "$AWS_REGION" \
-            --arg compose "$COMPOSE_B64" --arg nginx "$NGINX_B64" '{commands: [
+            --arg compose "$COMPOSE_B64" --arg nginx "$NGINX_B64" \
+            --arg loadenv "$LOADENV_B64" '{commands: [
             "set -e",
             "cd /opt/wiki",
             "cp -f docker-compose.prod.yml docker-compose.prod.yml.prev || true",
             "cp -f nginx.conf nginx.conf.prev || true",
             ("echo " + $compose + " | base64 -d > docker-compose.prod.yml"),
             ("echo " + $nginx + " | base64 -d > nginx.conf"),
+            ("echo " + $loadenv + " | base64 -d > load-env.sh"),
+            "chmod 700 load-env.sh",
+            ("./load-env.sh " + $region),
             ("aws ecr get-login-password --region " + $region + " | docker login --username AWS --password-stdin " + $reg),
             ("export ECR_REGISTRY=" + $reg + " IMAGE_TAG=" + $tag),
             "docker compose -f docker-compose.prod.yml config -q",
