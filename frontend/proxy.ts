@@ -1,6 +1,8 @@
 import { clerkMiddleware } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 
+import { normalizeRole } from "@/lib/auth/roles"
+
 export default clerkMiddleware(async (auth, req) => {
     const { pathname } = req.nextUrl
 
@@ -19,6 +21,30 @@ export default clerkMiddleware(async (auth, req) => {
 
     if (!userId && !isPublicRoute) {
         return authObject.redirectToSignIn()
+    }
+
+    // Signed-in users without a valid role wait on /pending until an admin
+    // assigns one. Users that already have a role never need /pending.
+    const isPassThrough =
+        isPublicRoute ||
+        pathname.startsWith("/api") ||
+        pathname.startsWith("/trpc") ||
+        pathname.startsWith("/__clerk")
+
+    if (userId && !isPassThrough) {
+        const hasValidRole = normalizeRole(role) !== null
+
+        if (!hasValidRole && pathname !== "/pending") {
+            return NextResponse.redirect(
+                new URL("/pending", req.url)
+            )
+        }
+
+        if (hasValidRole && pathname === "/pending") {
+            return NextResponse.redirect(
+                new URL("/dashboard", req.url)
+            )
+        }
     }
 
     // Admin routes

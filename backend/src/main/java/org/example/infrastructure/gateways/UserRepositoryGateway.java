@@ -2,6 +2,7 @@ package org.example.infrastructure.gateways;
 
 import org.example.application.gateway.UserGateway;
 import org.example.domain.model.UserModel;
+import org.example.infrastructure.persistence.entity.Role;
 import org.example.infrastructure.persistence.entity.User;
 import org.example.infrastructure.persistence.mapper.UserEntityMapper;
 import org.example.infrastructure.persistence.repository.UserRepository;
@@ -30,6 +31,19 @@ public class UserRepositoryGateway implements UserGateway {
         User saved = userRepository.save(userEntity);
 
         return userMapper.toDomain(saved);
+    }
+
+    // Updates only the role of an existing row. userMapper.toEntity() does not
+    // carry the id, so create() cannot be used to update a user.
+    @Override
+    public UserModel updateRole(Long id, String role) {
+        User userEntity = userRepository.findById(id)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("User not found: " + id));
+
+        userEntity.setRole(Role.valueOf(role.toUpperCase()));
+
+        return userMapper.toDomain(userRepository.save(userEntity));
     }
 
     @Override

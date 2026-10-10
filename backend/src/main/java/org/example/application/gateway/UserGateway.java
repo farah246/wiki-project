@@ -20,4 +20,6 @@ public interface UserGateway {
     Optional<UserModel> findByEmail(String email);
 
     Optional<UserModel> findByClerkUserId(String clerkUserId);
+
+    UserModel updateRole(Long id, String role);
 }

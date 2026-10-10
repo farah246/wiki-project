@@ -28,6 +28,10 @@ public class UserService {
         return userGateway.create(user);
     }
 
+    public UserModel updateRole(Long id, String role) {
+        return userGateway.updateRole(id, role);
+    }
+
     public void deleteUser(Long id) {
         userGateway.deleteById(id);
     }

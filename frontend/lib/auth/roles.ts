@@ -4,6 +4,18 @@ export type Role =
     | "MANAGER"
     | "ADMIN"
 
+export const ROLES: Role[] = ["DEVELOPER", "SALES", "MANAGER", "ADMIN"]
+
+// Normalize a role value to its canonical uppercase form, or null if the value is
+// missing or is not one of the 4 known roles (e.g. a leftover "moderator").
+export function normalizeRole(value: unknown): Role | null {
+    if (typeof value !== "string") return null
+
+    const upper = value.trim().toUpperCase()
+
+    return (ROLES as string[]).includes(upper) ? (upper as Role) : null
+}
+
 export function isAdmin(role: string | null | undefined) {
     return role === "ADMIN"
 }

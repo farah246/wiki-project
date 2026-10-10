@@ -1,77 +1,204 @@
-import { clerkClient } from "@clerk/nextjs/server";
-import { removeRole, setRole } from "./actions";
+import { auth, clerkClient } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { normalizeRole, ROLES } from "@/lib/auth/roles";
+import { inviteUser, removeRole, revokeInvitation, setRole } from "./actions";
+
+const inputClass =
+    "rounded-lg border bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50";
+const primaryButton =
+    "rounded-lg bg-violet-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50";
+const secondaryButton =
+    "rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50";
 
 export default async function Admin() {
+  const { userId: currentUserId, sessionClaims } = await auth();
+
+  // Defense in depth: proxy.ts already blocks non-admins on /admin
+  if (normalizeRole(sessionClaims?.metadata?.role) !== "ADMIN") {
+    redirect("/");
+  }
+
   const client = await clerkClient();
 
-  const users = (await client.users.getUserList()).data;
+  const [userList, invitationList] = await Promise.all([
+    client.users.getUserList({ limit: 100, orderBy: "-created_at" }),
+    client.invitations.getInvitationList({ status: "pending" }),
+  ]);
+
+  // Users waiting for a role come first
+  const users = [...userList.data].sort(
+      (a, b) =>
+          Number(normalizeRole(a.publicMetadata.role) !== null) -
+          Number(normalizeRole(b.publicMetadata.role) !== null)
+  );
+
+  const invitations = invitationList.data;
 
   return (
-    <>
-      {users.map((user) => {
-        return (
-          <div
-            key={user.id}
-            className={`flex items-center justify-between gap-4 p-4 ${
-              users.indexOf(user) % 2 === 0
-                ? "bg-neutral-50 dark:bg-neutral-800"
-                : "bg-white dark:bg-neutral-900"
-            }`}
-          >
-            <div className="flex gap-8">
-              <div className="dark:text-neutral-200">
-                {user.firstName} {user.lastName}
-              </div>
+      <div className="min-h-full">
+        <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8 lg:py-10">
+          <h1 className="text-3xl font-semibold tracking-tight">
+            User management
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            Assign roles to users and invite new teammates with a role.
+          </p>
 
-              <div className="dark:text-neutral-200">
-                {
-                  user.emailAddresses.find(
-                    (email) => email.id === user.primaryEmailAddressId
-                  )?.emailAddress
-                }
-              </div>
+          {/* Invite */}
+          <section className="mt-8 rounded-2xl border bg-card p-5">
+            <h2 className="font-semibold">Invite a user</h2>
+            <form
+                action={inviteUser}
+                className="mt-4 flex flex-wrap items-center gap-2"
+            >
+              <input
+                  type="email"
+                  name="email"
+                  required
+                  placeholder="name@company.com"
+                  className={`${inputClass} min-w-64 flex-1`}
+              />
+              <select name="role" required defaultValue="" className={inputClass}>
+                <option value="">Choose a role</option>
+                {ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                ))}
+              </select>
+              <button type="submit" className={primaryButton}>
+                Send invitation
+              </button>
+            </form>
 
-              <div className="dark:text-neutral-200">
-                {user.publicMetadata.role as string}
-              </div>
+            {invitations.length > 0 && (
+                <ul className="mt-5 divide-y rounded-lg border">
+                  {invitations.map((invitation) => (
+                      <li
+                          key={invitation.id}
+                          className="flex items-center justify-between gap-4 px-4 py-3 text-sm"
+                      >
+                        <div className="flex flex-wrap gap-x-6 gap-y-1">
+                          <span>{invitation.emailAddress}</span>
+                          <span className="text-muted-foreground">
+                      {normalizeRole(invitation.publicMetadata?.role) ??
+                          "No role"}
+                            , pending
+                    </span>
+                        </div>
+                        <form action={revokeInvitation}>
+                          <input type="hidden" name="id" value={invitation.id} />
+                          <button type="submit" className={secondaryButton}>
+                            Revoke
+                          </button>
+                        </form>
+                      </li>
+                  ))}
+                </ul>
+            )}
+          </section>
+
+          {/* Users */}
+          <section className="mt-8 rounded-2xl border bg-card">
+            <div className="border-b px-5 py-4">
+              <h2 className="font-semibold">Users</h2>
+              {userList.totalCount > users.length && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Showing the {users.length} most recent of {userList.totalCount}{" "}
+                    users.
+                  </p>
+              )}
             </div>
 
-            <div className="flex gap-2">
-              <form action={setRole} className="inline">
-                <input type="hidden" value={user.id} name="id" />
-                <input type="hidden" value="admin" name="role" />
-                <button
-                  type="submit"
-                  className="px-2 py-1 text-sm border border-neutral-300 dark:border-neutral-600 dark:text-neutral-200 dark:hover:bg-neutral-700"
-                >
-                  Make Admin
-                </button>
-              </form>
+            <ul className="divide-y">
+              {users.map((user) => {
+                const email = user.emailAddresses.find(
+                    (e) => e.id === user.primaryEmailAddressId
+                )?.emailAddress;
+                const name =
+                    [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+                    email;
+                const rawRole = user.publicMetadata.role;
+                const role = normalizeRole(rawRole);
+                const isSelf = user.id === currentUserId;
 
-              <form action={setRole} className="inline">
-                <input type="hidden" value={user.id} name="id" />
-                <input type="hidden" value="moderator" name="role" />
-                <button
-                  type="submit"
-                  className="px-2 py-1 text-sm border border-neutral-300 dark:border-neutral-600 dark:text-neutral-200 dark:hover:bg-neutral-700"
-                >
-                  Make Moderator
-                </button>
-              </form>
+                return (
+                    <li
+                        key={user.id}
+                        className="flex flex-wrap items-center justify-between gap-4 px-5 py-4"
+                    >
+                      <div className="min-w-0">
+                        <div className="truncate font-medium">
+                          {name}
+                          {isSelf && (
+                              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          (you)
+                        </span>
+                          )}
+                        </div>
+                        <div className="truncate text-sm text-muted-foreground">
+                          {email}
+                        </div>
+                        <div className="mt-1 text-xs">
+                          {role ? (
+                              <span className="text-muted-foreground">
+                          Current role: {role}
+                        </span>
+                          ) : (
+                              <span className="text-amber-600">
+                          {rawRole
+                              ? `Invalid role "${String(rawRole)}"`
+                              : "No role, waiting for approval"}
+                        </span>
+                          )}
+                        </div>
+                      </div>
 
-              <form action={removeRole} className="inline">
-                <input type="hidden" value={user.id} name="id" />
-                <button
-                  type="submit"
-                  className="px-2 py-1 text-sm border border-neutral-300 dark:border-neutral-600 dark:text-neutral-200 dark:hover:bg-neutral-700"
-                >
-                  Remove Role
-                </button>
-              </form>
-            </div>
-          </div>
-        );
-      })}
-    </>
+                      <div className="flex items-center gap-2">
+                        <form action={setRole} className="flex items-center gap-2">
+                          <input type="hidden" name="id" value={user.id} />
+                          <select
+                              name="role"
+                              required
+                              defaultValue={role ?? ""}
+                              disabled={isSelf}
+                              className={inputClass}
+                          >
+                            {!role && <option value="">Choose a role</option>}
+                            {ROLES.map((r) => (
+                                <option key={r} value={r}>
+                                  {r}
+                                </option>
+                            ))}
+                          </select>
+                          <button
+                              type="submit"
+                              disabled={isSelf}
+                              className={primaryButton}
+                          >
+                            Save
+                          </button>
+                        </form>
+
+                        {rawRole != null && (
+                            <form action={removeRole}>
+                              <input type="hidden" name="id" value={user.id} />
+                              <button
+                                  type="submit"
+                                  disabled={isSelf}
+                                  className={secondaryButton}
+                              >
+                                Remove role
+                              </button>
+                            </form>
+                        )}
+                      </div>
+                    </li>
+                );
+              })}
+            </ul>
+          </section>
+        </div>
+      </div>
   );
 }
