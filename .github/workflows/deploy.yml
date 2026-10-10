@@ -52,13 +52,25 @@ jobs:
         env:
           REG: ${{ steps.ecr.outputs.registry }}
         run: |
-          PARAMS=$(jq -n --arg reg "$REG" --arg tag "${{ github.sha }}" --arg region "$AWS_REGION" '{commands: [
+          COMPOSE_B64=$(base64 -w0 deploy/docker-compose.prod.yml)
+          NGINX_B64=$(base64 -w0 deploy/nginx.conf)
+
+          PARAMS=$(jq -n \
+            --arg reg "$REG" --arg tag "${{ github.sha }}" --arg region "$AWS_REGION" \
+            --arg compose "$COMPOSE_B64" --arg nginx "$NGINX_B64" '{commands: [
             "set -e",
             "cd /opt/wiki",
+            "cp -f docker-compose.prod.yml docker-compose.prod.yml.prev || true",
+            "cp -f nginx.conf nginx.conf.prev || true",
+            ("echo " + $compose + " | base64 -d > docker-compose.prod.yml"),
+            ("echo " + $nginx + " | base64 -d > nginx.conf"),
             ("aws ecr get-login-password --region " + $region + " | docker login --username AWS --password-stdin " + $reg),
             ("export ECR_REGISTRY=" + $reg + " IMAGE_TAG=" + $tag),
+            "docker compose -f docker-compose.prod.yml config -q",
             "docker compose -f docker-compose.prod.yml pull",
-            "docker compose -f docker-compose.prod.yml up -d",
+            "docker compose -f docker-compose.prod.yml up -d --remove-orphans",
+            "docker exec wiki-nginx-1 nginx -t",
+            "docker exec wiki-nginx-1 nginx -s reload",
             "docker image prune -f"
           ]}')
 
