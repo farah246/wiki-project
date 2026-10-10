@@ -15,6 +15,7 @@ import type { CommercialDoc } from "@/lib/types/commercial-doc"
 import type { Procedure } from "@/lib/types/procedure"
 import type { ReactNode } from "react"
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
 type GlobalSearchProps = {
     technicalDocs: TechnicalDoc[]
     commercialDocs: CommercialDoc[]
@@ -99,7 +100,7 @@ export function GlobalSearch({
             }
 
             const response = await fetch(
-                `http://localhost:8080/api/search?query=${encodeURIComponent(trimmedQuery)}`,
+                `${API_URL}/api/search?query=${encodeURIComponent(trimmedQuery)}`,
                 {
                     method: "GET",
                     headers: {
