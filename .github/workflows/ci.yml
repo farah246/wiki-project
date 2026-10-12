@@ -2,8 +2,9 @@ name: CI
 
 on:
   pull_request:
-  push:            # every branch, including main
-  workflow_call:   # lets deploy.yml run these checks first (see README)
+  push:
+    branches-ignore: [ main ]
+  workflow_call:   # lets deploy.yml run these checks first
 
 permissions:
   contents: read
