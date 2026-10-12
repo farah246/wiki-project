@@ -64,10 +64,12 @@ public class DocHistoryService {
             return;
         }
 
-        // Documents that existed before history was added have no rows yet:
-        // treat their earlier state as version 1.
-        long existing = docHistoryGateway.countByDocument(type, docId);
-        int version = (int) Math.max(existing, 1) + 1;
+        // The next version follows the highest one recorded (the database
+        // has a unique index on document + version). Documents that existed
+        // before history was added have no rows yet: their earlier state
+        // counts as version 1.
+        int latest = docHistoryGateway.latestVersionByDocument(type, docId);
+        int version = Math.max(latest, 1) + 1;
 
         record(type, docId, user, "UPDATED",
                 "Changed: " + String.join(", ", changedFields), version);

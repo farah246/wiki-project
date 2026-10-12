@@ -7,7 +7,6 @@ import {
     Pencil,
     Trash2,
 } from "lucide-react"
-import { useAuth } from "@clerk/nextjs"
 
 import { deleteTechnicalDoc } from "@/actions/technical-docs"
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
@@ -17,6 +16,7 @@ import {
     canDeleteTechnicalDocs,
     canEditTechnicalDocs,
 } from "@/lib/auth/roles"
+import { useCurrentRole } from "@/lib/auth/use-role"
 
 type TechnicalDocListProps = {
     documents: TechnicalDoc[]
@@ -25,12 +25,7 @@ type TechnicalDocListProps = {
 export function TechnicalDocList({
                                      documents,
                                  }: TechnicalDocListProps) {
-    const { sessionClaims } = useAuth()
-
-    const role =
-        typeof sessionClaims?.metadata?.role === "string"
-            ? sessionClaims.metadata.role.toUpperCase()
-            : null
+    const role = useCurrentRole()
 
     const canEdit = canEditTechnicalDocs(role)
     const canDelete = canDeleteTechnicalDocs(role)

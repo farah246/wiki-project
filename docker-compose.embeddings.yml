@@ -1,0 +1,29 @@
+# Local development helper: runs ONLY the embeddings service (same image and
+# model as production). Start the backend and the frontend normally
+# (IntelliJ / npm run dev) and point the backend to it:
+#
+#   docker compose -f docker-compose.embeddings.yml up -d
+#   EMBEDDING_API_URL=http://localhost:8081/embed      (in backend/.env)
+#
+# The first start downloads the model (about 130 MB); wait until
+# http://localhost:8081/health answers 200.
+services:
+  embeddings:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8.1
+    command:
+      - "--model-id"
+      - "BAAI/bge-small-en-v1.5"
+      - "--max-batch-tokens"
+      - "2048"
+      - "--max-client-batch-size"
+      - "4"
+      - "--tokenization-workers"
+      - "1"
+    ports:
+      - "8081:80"
+    volumes:
+      - tei-data:/data
+    restart: unless-stopped
+
+volumes:
+  tei-data:

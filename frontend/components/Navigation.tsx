@@ -10,14 +10,12 @@ import {
 } from "@clerk/nextjs"
 
 import { isAdmin } from "@/lib/auth/roles"
+import { useCurrentRole } from "@/lib/auth/use-role"
 
 export default function Navigation() {
-    const { isSignedIn, sessionClaims } = useAuth()
+    const { isSignedIn } = useAuth()
 
-    const role =
-        typeof sessionClaims?.metadata?.role === "string"
-            ? sessionClaims.metadata.role.toUpperCase()
-            : null
+    const role = useCurrentRole()
 
     return (
         <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">

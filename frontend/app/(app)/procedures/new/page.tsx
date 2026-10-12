@@ -1,16 +1,11 @@
 import { redirect } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
 
 import { ProcedureForm } from "@/components/forms/procedure-form"
 import { canCreateProcedures } from "@/lib/auth/roles"
+import { getCurrentRole } from "@/lib/auth/get-role"
 
 export default async function NewProcedurePage() {
-    const { sessionClaims } = await auth()
-
-    const role =
-        typeof sessionClaims?.metadata?.role === "string"
-            ? sessionClaims.metadata.role.toUpperCase()
-            : null
+    const role = await getCurrentRole()
 
     if (!canCreateProcedures(role)) {
         redirect("/procedures")

@@ -6,22 +6,17 @@ import {
     FileText,
     Sparkles,
 } from "lucide-react"
-import { auth } from "@clerk/nextjs/server"
 
 import { getTechnicalDocs } from "@/lib/api/technical-doc"
 import { getCommercialDocs } from "@/lib/api/commercial-doc"
 import { getProcedures } from "@/lib/api/procedures"
 import { getCurrentUser } from "@/lib/api/users"
+import { getCurrentRole } from "@/lib/auth/get-role"
 import { DocumentCard } from "@/components/documents/document-card"
 import { GlobalSearch } from "@/components/dashboard/global-search"
 
 export default async function Dashboard() {
-    const { sessionClaims } = await auth()
-
-    const clerkRole =
-        typeof sessionClaims?.metadata?.role === "string"
-            ? sessionClaims.metadata.role.toUpperCase()
-            : null
+    const clerkRole = await getCurrentRole()
 
     const [
         technicalDocs,

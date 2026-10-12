@@ -7,7 +7,6 @@ import {
     Pencil,
     Trash2,
 } from "lucide-react"
-import { useAuth } from "@clerk/nextjs"
 
 import { deleteCommercialDoc } from "@/actions/commercial-doc"
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
@@ -17,6 +16,7 @@ import {
     canDeleteCommercialDocs,
     canEditCommercialDocs,
 } from "@/lib/auth/roles"
+import { useCurrentRole } from "@/lib/auth/use-role"
 
 type CommercialDocListProps = {
     documents: CommercialDoc[]
@@ -25,12 +25,7 @@ type CommercialDocListProps = {
 export function CommercialDocList({
                                       documents,
                                   }: CommercialDocListProps) {
-    const { sessionClaims } = useAuth()
-
-    const role =
-        typeof sessionClaims?.metadata?.role === "string"
-            ? sessionClaims.metadata.role.toUpperCase()
-            : null
+    const role = useCurrentRole()
 
     const canEdit = canEditCommercialDocs(role)
     const canDelete = canDeleteCommercialDocs(role)

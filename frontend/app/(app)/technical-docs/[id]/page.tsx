@@ -1,11 +1,11 @@
 import Link from "next/link"
 import { ArrowLeft, Code2, Edit, FileText, GitBranch } from "lucide-react"
-import { auth } from "@clerk/nextjs/server"
 
 import { getTechnicalDoc } from "@/lib/api/technical-doc"
 import { getTechnicalDocHistory } from "@/lib/api/doc-history"
 import { DocHistory } from "@/components/documents/doc-history"
 import { canEditTechnicalDocs } from "@/lib/auth/roles"
+import { getCurrentRole } from "@/lib/auth/get-role"
 
 type TechnicalDocPageProps = {
     params: Promise<{
@@ -18,12 +18,7 @@ export default async function TechnicalDocPage({
                                                }: TechnicalDocPageProps) {
     const { id } = await params
 
-    const { sessionClaims } = await auth()
-
-    const role =
-        typeof sessionClaims?.metadata?.role === "string"
-            ? sessionClaims.metadata.role.toUpperCase()
-            : null
+    const role = await getCurrentRole()
 
     const canEdit = canEditTechnicalDocs(role)
 

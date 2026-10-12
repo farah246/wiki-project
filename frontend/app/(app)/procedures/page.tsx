@@ -1,18 +1,13 @@
 import Link from "next/link"
 import { Plus } from "lucide-react"
-import { auth } from "@clerk/nextjs/server"
 
 import { getProcedures } from "@/lib/api/procedures"
 import { ProcedureList } from "@/components/procedures/procedure-list"
 import { canCreateProcedures } from "@/lib/auth/roles"
+import { getCurrentRole } from "@/lib/auth/get-role"
 
 export default async function ProceduresPage() {
-    const { sessionClaims } = await auth()
-
-    const role =
-        typeof sessionClaims?.metadata?.role === "string"
-            ? sessionClaims.metadata.role.toUpperCase()
-            : null
+    const role = await getCurrentRole()
 
     const canCreate = canCreateProcedures(role)
 

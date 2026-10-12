@@ -1,9 +1,9 @@
 import { notFound, redirect } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
 
 import { getCommercialDoc } from "@/lib/api/commercial-doc"
 import { CommercialDocForm } from "@/components/forms/commercial-doc-form"
 import { canEditCommercialDocs } from "@/lib/auth/roles"
+import { getCurrentRole } from "@/lib/auth/get-role"
 
 type EditCommercialDocPageProps = {
     params: Promise<{
@@ -21,12 +21,7 @@ export default async function EditCommercialDocPage({
         notFound()
     }
 
-    const { sessionClaims } = await auth()
-
-    const role =
-        typeof sessionClaims?.metadata?.role === "string"
-            ? sessionClaims.metadata.role.toUpperCase()
-            : null
+    const role = await getCurrentRole()
 
     if (!canEditCommercialDocs(role)) {
         redirect(`/commercial-docs/${id}`)

@@ -1,9 +1,9 @@
 import { notFound, redirect } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
 
 import { getProcedure } from "@/lib/api/procedures"
 import { ProcedureForm } from "@/components/forms/procedure-form"
 import { canEditProcedures } from "@/lib/auth/roles"
+import { getCurrentRole } from "@/lib/auth/get-role"
 
 type EditProcedurePageProps = {
     params: Promise<{
@@ -21,12 +21,7 @@ export default async function EditProcedurePage({
         notFound()
     }
 
-    const { sessionClaims } = await auth()
-
-    const role =
-        typeof sessionClaims?.metadata?.role === "string"
-            ? sessionClaims.metadata.role.toUpperCase()
-            : null
+    const role = await getCurrentRole()
 
     if (!canEditProcedures(role)) {
         redirect(`/procedures/${id}`)

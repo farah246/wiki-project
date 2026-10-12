@@ -1,18 +1,13 @@
 import Link from "next/link"
 import { Plus } from "lucide-react"
-import { auth } from "@clerk/nextjs/server"
 
 import { getTechnicalDocs } from "@/lib/api/technical-doc"
 import { TechnicalDocList } from "@/components/technical-docs/technical-doc-list"
 import { canCreateTechnicalDocs } from "@/lib/auth/roles"
+import { getCurrentRole } from "@/lib/auth/get-role"
 
 export default async function TechnicalDocsPage() {
-    const { sessionClaims } = await auth()
-
-    const role =
-        typeof sessionClaims?.metadata?.role === "string"
-            ? sessionClaims.metadata.role.toUpperCase()
-            : null
+    const role = await getCurrentRole()
 
     const canCreate = canCreateTechnicalDocs(role)
 

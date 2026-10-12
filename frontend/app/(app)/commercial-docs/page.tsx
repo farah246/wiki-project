@@ -1,18 +1,13 @@
 import Link from "next/link"
 import { Plus } from "lucide-react"
-import { auth } from "@clerk/nextjs/server"
 
 import { getCommercialDocs } from "@/lib/api/commercial-doc"
 import { CommercialDocList } from "@/components/commercial-docs/commercial-doc-list"
 import { canCreateCommercialDocs } from "@/lib/auth/roles"
+import { getCurrentRole } from "@/lib/auth/get-role"
 
 export default async function CommercialDocsPage() {
-    const { sessionClaims } = await auth()
-
-    const role =
-        typeof sessionClaims?.metadata?.role === "string"
-            ? sessionClaims.metadata.role.toUpperCase()
-            : null
+    const role = await getCurrentRole()
 
     const canCreate = canCreateCommercialDocs(role)
 

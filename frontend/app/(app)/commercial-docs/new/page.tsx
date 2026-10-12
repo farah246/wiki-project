@@ -1,16 +1,11 @@
 import { redirect } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
 
 import { CommercialDocForm } from "@/components/forms/commercial-doc-form"
 import { canCreateCommercialDocs } from "@/lib/auth/roles"
+import { getCurrentRole } from "@/lib/auth/get-role"
 
 export default async function NewCommercialDocPage() {
-    const { sessionClaims } = await auth()
-
-    const role =
-        typeof sessionClaims?.metadata?.role === "string"
-            ? sessionClaims.metadata.role.toUpperCase()
-            : null
+    const role = await getCurrentRole()
 
     if (!canCreateCommercialDocs(role)) {
         redirect("/commercial-docs")

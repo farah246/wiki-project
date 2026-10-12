@@ -1,18 +1,13 @@
 import Link from "next/link"
 import { ArrowLeft, FileText } from "lucide-react"
 import { redirect } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
 
 import { TechnicalDocForm } from "@/components/forms/technical-doc-form"
 import { canCreateTechnicalDocs } from "@/lib/auth/roles"
+import { getCurrentRole } from "@/lib/auth/get-role"
 
 export default async function NewTechnicalDocPage() {
-    const { sessionClaims } = await auth()
-
-    const role =
-        typeof sessionClaims?.metadata?.role === "string"
-            ? sessionClaims.metadata.role.toUpperCase()
-            : null
+    const role = await getCurrentRole()
 
     if (!canCreateTechnicalDocs(role)) {
         redirect("/technical-docs")

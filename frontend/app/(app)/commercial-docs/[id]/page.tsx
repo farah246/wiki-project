@@ -1,12 +1,12 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft, Pencil } from "lucide-react"
-import { auth } from "@clerk/nextjs/server"
 
 import { getCommercialDoc } from "@/lib/api/commercial-doc"
 import { getCommercialDocHistory } from "@/lib/api/doc-history"
 import { DocHistory } from "@/components/documents/doc-history"
 import { canEditCommercialDocs } from "@/lib/auth/roles"
+import { getCurrentRole } from "@/lib/auth/get-role"
 
 type CommercialDocPageProps = {
     params: Promise<{
@@ -24,12 +24,7 @@ export default async function CommercialDocPage({
         notFound()
     }
 
-    const { sessionClaims } = await auth()
-
-    const role =
-        typeof sessionClaims?.metadata?.role === "string"
-            ? sessionClaims.metadata.role.toUpperCase()
-            : null
+    const role = await getCurrentRole()
 
     const canEdit = canEditCommercialDocs(role)
 

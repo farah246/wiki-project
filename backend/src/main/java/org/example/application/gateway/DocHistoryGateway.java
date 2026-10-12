@@ -19,7 +19,8 @@ public interface DocHistoryGateway {
     // History of one document, newest first
     List<DocHistoryModel> findByDocument(DocumentType type, Long docId);
 
-    long countByDocument(DocumentType type, Long docId);
+    // Highest version number recorded for the document, 0 if there is none
+    int latestVersionByDocument(DocumentType type, Long docId);
 
     // Unlinks the history rows from a document that is about to be deleted,
     // so the audit rows survive the deletion

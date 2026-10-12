@@ -7,7 +7,6 @@ import {
     Pencil,
     Trash2,
 } from "lucide-react"
-import { useAuth } from "@clerk/nextjs"
 
 import { deleteProcedure } from "@/actions/procedures"
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
@@ -17,6 +16,7 @@ import {
     canEditProcedures,
     canDeleteProcedures,
 } from "@/lib/auth/roles"
+import { useCurrentRole } from "@/lib/auth/use-role"
 
 type ProcedureListProps = {
     procedures: Procedure[]
@@ -27,12 +27,7 @@ export function ProcedureList({
                               }: ProcedureListProps) {
     const [searchQuery, setSearchQuery] = useState("")
 
-    const { sessionClaims } = useAuth()
-
-    const role =
-        typeof sessionClaims?.metadata?.role === "string"
-            ? sessionClaims.metadata.role.toUpperCase()
-            : null
+    const role = useCurrentRole()
 
     const canEdit = canEditProcedures(role)
     const canDelete = canDeleteProcedures(role)

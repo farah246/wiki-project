@@ -2,6 +2,7 @@ package org.example.interfaces.controller;
 
 import org.example.application.service.SemanticSearchService;
 import org.example.domain.model.SearchResultModel;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,6 +21,7 @@ public class SearchController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('DEVELOPER', 'SALES', 'MANAGER', 'ADMIN')")
     public List<SearchResultModel> search(
             @RequestParam String query
     ) {

@@ -80,11 +80,11 @@ public class DocHistoryRepositoryGateway implements DocHistoryGateway {
 
     @Override
     @Transactional(readOnly = true)
-    public long countByDocument(DocumentType type, Long docId) {
+    public int latestVersionByDocument(DocumentType type, Long docId) {
         return switch (type) {
-            case TECHNICAL_DOC -> docHistoryRepository.countByTechnicalDocId(docId);
-            case COMMERCIAL_DOC -> docHistoryRepository.countByCommercialDocId(docId);
-            case PROCEDURE -> docHistoryRepository.countByProcedureId(docId);
+            case TECHNICAL_DOC -> docHistoryRepository.findLatestVersionByTechnicalDocId(docId);
+            case COMMERCIAL_DOC -> docHistoryRepository.findLatestVersionByCommercialDocId(docId);
+            case PROCEDURE -> docHistoryRepository.findLatestVersionByProcedureId(docId);
         };
     }
 

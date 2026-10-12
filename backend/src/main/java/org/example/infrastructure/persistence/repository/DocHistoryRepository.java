@@ -16,11 +16,14 @@ public interface DocHistoryRepository extends JpaRepository<DocHistory, Long> {
 
     List<DocHistory> findByProcedureIdOrderByCreatedAtDescIdDesc(Long id);
 
-    long countByTechnicalDocId(Long id);
+    @Query("select coalesce(max(h.docVersion), 0) from DocHistory h where h.technicalDoc.id = :id")
+    int findLatestVersionByTechnicalDocId(@Param("id") Long id);
 
-    long countByCommercialDocId(Long id);
+    @Query("select coalesce(max(h.docVersion), 0) from DocHistory h where h.commercialDoc.id = :id")
+    int findLatestVersionByCommercialDocId(@Param("id") Long id);
 
-    long countByProcedureId(Long id);
+    @Query("select coalesce(max(h.docVersion), 0) from DocHistory h where h.procedure.id = :id")
+    int findLatestVersionByProcedureId(@Param("id") Long id);
 
     @Modifying(clearAutomatically = true)
     @Query("update DocHistory h set h.technicalDoc = null where h.technicalDoc.id = :id")

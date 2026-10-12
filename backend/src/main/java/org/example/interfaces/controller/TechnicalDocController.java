@@ -1,7 +1,10 @@
 package org.example.interfaces.controller;
 
+import jakarta.validation.Valid;
+import org.example.application.exception.NotFoundException;
 import org.example.application.service.TechnicalDocService;
 import org.example.domain.model.TechnicalDocModel;
+import org.example.interfaces.dto.request.TechnicalDocRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -28,17 +31,17 @@ public class TechnicalDocController {
     @PreAuthorize("hasAnyRole('DEVELOPER', 'SALES', 'MANAGER', 'ADMIN')")
     public TechnicalDocModel getById(@PathVariable Long id) {
         return technicalDocService.getTechnicalDocById(id)
-                .orElseThrow(() -> new RuntimeException("TechnicalDoc not found"));
+                .orElseThrow(() -> new NotFoundException("Technical document not found"));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('DEVELOPER', 'MANAGER', 'ADMIN')")
     public TechnicalDocModel create(
-            @RequestBody TechnicalDocModel technicalDoc,
+            @Valid @RequestBody TechnicalDocRequest request,
             Authentication authentication
     ) {
         return technicalDocService.saveTechnicalDoc(
-                technicalDoc,
+                toModel(request),
                 authentication
         );
     }
@@ -47,12 +50,12 @@ public class TechnicalDocController {
     @PreAuthorize("hasAnyRole('DEVELOPER', 'MANAGER', 'ADMIN')")
     public TechnicalDocModel update(
             @PathVariable Long id,
-            @RequestBody TechnicalDocModel technicalDoc,
+            @Valid @RequestBody TechnicalDocRequest request,
             Authentication authentication
     ) {
         return technicalDocService.updateTechnicalDoc(
                 id,
-                technicalDoc,
+                toModel(request),
                 authentication
         );
     }
@@ -64,5 +67,24 @@ public class TechnicalDocController {
             Authentication authentication
     ) {
         technicalDocService.deleteTechnicalDoc(id, authentication);
+    }
+
+    // Only the editable fields come from the client. id, author and
+    // timestamps are always decided by the server.
+    private TechnicalDocModel toModel(TechnicalDocRequest request) {
+        return new TechnicalDocModel(
+                null,
+                request.title().trim(),
+                request.content().trim(),
+                blankToNull(request.codeSnippet()),
+                blankToNull(request.gitRef()),
+                null,
+                null,
+                null
+        );
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

@@ -23,7 +23,7 @@ public class SecurityConfig {
                         .requestMatchers("/").permitAll()
                         // Health check for Docker / AWS: status only, no details exposed
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().hasAnyRole("DEVELOPER", "SALES", "MANAGER", "ADMIN")
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
