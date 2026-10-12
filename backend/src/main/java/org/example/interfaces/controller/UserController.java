@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-
+import org.example.application.exception.NotFoundException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -60,7 +60,7 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public CreateUserResponse getById(@PathVariable Long id) {
         UserModel user = userService.getUserById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         return userDtoMapper.toResponse(user);
     }
@@ -88,8 +88,8 @@ public class UserController {
             @PathVariable String username
     ) {
         UserModel user = userService.getByUsername(username)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found by username"));
+                .orElseThrow(() -> new NotFoundException("User not found by username"));
+
 
         return userDtoMapper.toResponse(user);
     }
@@ -100,8 +100,7 @@ public class UserController {
             @PathVariable String email
     ) {
         UserModel user = userService.getByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found by email"));
+                .orElseThrow(() -> new NotFoundException("User not found by email"));
 
         return userDtoMapper.toResponse(user);
     }

@@ -1,5 +1,6 @@
 package org.example.application.service;
 
+import org.example.application.exception.NotFoundException;
 import org.example.application.gateway.TechnicalDocGateway;
 import org.example.domain.model.EmbeddingModel;
 import org.example.domain.model.TechnicalDocModel;
@@ -29,8 +30,7 @@ public class DocumentEmbeddingService {
 
         TechnicalDocModel technicalDoc = technicalDocGateway.findById(technicalDocId)
                 .orElseThrow(() ->
-                        new RuntimeException("Technical document not found: " + technicalDocId)
-                );
+                        new NotFoundException("Technical document not found: " + technicalDocId));
 
         String text = technicalDoc.textForEmbedding();
 

@@ -1,10 +1,8 @@
 package org.example;
 
 import io.github.cdimascio.dotenv.Dotenv;
-import org.example.infrastructure.config.DatabaseCheckService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ApplicationContext;
 
 @SpringBootApplication
 public class BackendWikiApplication {
@@ -19,12 +17,6 @@ public class BackendWikiApplication {
                 System.setProperty(entry.getKey(), entry.getValue())
         );
 
-        ApplicationContext context =
-                SpringApplication.run(BackendWikiApplication.class, args);
-
-        DatabaseCheckService service =
-                context.getBean(DatabaseCheckService.class);
-
-        service.checkConnections();
+        SpringApplication.run(BackendWikiApplication.class, args);
     }
 }
