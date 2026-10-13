@@ -61,4 +61,17 @@ class ClerkJwtAuthenticationConverterTest {
 
         assertTrue(authoritiesOf(jwt).isEmpty());
     }
+    @Test
+    void unknownRole_givesNoAuthorities() {
+        Jwt jwt = jwtWith(Map.of("metadata", Map.of("role", "moderator")));
+
+        assertTrue(authoritiesOf(jwt).isEmpty());
+    }
+
+    @Test
+    void roleWithSurroundingSpaces_isTrimmed() {
+        Jwt jwt = jwtWith(Map.of("metadata", Map.of("role", " admin ")));
+
+        assertEquals(List.of("ROLE_ADMIN"), authoritiesOf(jwt));
+    }
 }

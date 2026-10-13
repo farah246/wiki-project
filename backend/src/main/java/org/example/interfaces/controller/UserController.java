@@ -1,106 +1,34 @@
 package org.example.interfaces.controller;
 
 import org.example.application.service.CurrentUserService;
-import org.example.application.service.UserService;
-import org.example.application.usecase.CreateUser;
 import org.example.domain.model.UserModel;
-import org.example.interfaces.dto.request.CreateUserRequest;
 import org.example.interfaces.dto.response.CreateUserResponse;
 import org.example.interfaces.mapper.UserDtoMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
-import org.example.application.exception.NotFoundException;
-import java.util.List;
-import java.util.stream.Collectors;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
-    private final UserService userService;
-    private final CreateUser createUser;
     private final UserDtoMapper userDtoMapper;
     private final CurrentUserService currentUserService;
 
-    @Autowired
     public UserController(
-            UserService userService,
-            CreateUser createUser,
             UserDtoMapper userDtoMapper,
             CurrentUserService currentUserService
     ) {
-        this.userService = userService;
-        this.createUser = createUser;
         this.userDtoMapper = userDtoMapper;
         this.currentUserService = currentUserService;
     }
 
-    @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public List<CreateUserResponse> getAll() {
-        return userService.getAllUsers()
-                .stream()
-                .map(userDtoMapper::toResponse)
-                .collect(Collectors.toList());
-    }
-
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('DEVELOPER', 'SALES', 'MANAGER', 'ADMIN')")
-    public CreateUserResponse getCurrentUser(
-            org.springframework.security.core.Authentication authentication
-    ) {
+    public CreateUserResponse getCurrentUser(Authentication authentication) {
         UserModel user = currentUserService.getCurrentUser(authentication);
-
-        return userDtoMapper.toResponse(user);
-    }
-
-    @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public CreateUserResponse getById(@PathVariable Long id) {
-        UserModel user = userService.getUserById(id)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-
-        return userDtoMapper.toResponse(user);
-    }
-
-    @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public CreateUserResponse create(
-            @Valid @RequestBody CreateUserRequest request
-    ) {
-        UserModel userModel = userDtoMapper.toDomain(request);
-        UserModel createdUser = createUser.execute(userModel);
-
-        return userDtoMapper.toResponse(createdUser);
-    }
-
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public void delete(@PathVariable Long id) {
-        userService.deleteUser(id);
-    }
-
-    @GetMapping("/by-username/{username}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public CreateUserResponse getByUsername(
-            @PathVariable String username
-    ) {
-        UserModel user = userService.getByUsername(username)
-                .orElseThrow(() -> new NotFoundException("User not found by username"));
-
-
-        return userDtoMapper.toResponse(user);
-    }
-
-    @GetMapping("/by-email/{email}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public CreateUserResponse getByEmail(
-            @PathVariable String email
-    ) {
-        UserModel user = userService.getByEmail(email)
-                .orElseThrow(() -> new NotFoundException("User not found by email"));
 
         return userDtoMapper.toResponse(user);
     }

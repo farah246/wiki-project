@@ -1,7 +1,6 @@
 package org.example.interfaces.mapper;
 
 import org.example.domain.model.UserModel;
-import org.example.interfaces.dto.request.CreateUserRequest;
 import org.example.interfaces.dto.response.CreateUserResponse;
 import org.springframework.stereotype.Component;
 
@@ -19,15 +18,5 @@ public class UserDtoMapper {
         );
     }
 
-    public UserModel toDomain(CreateUserRequest request) {
-        return new UserModel(
-                null,
-                null,
-                request.getUsername(),
-                request.getEmail(),
-                request.getRole() != null ? request.getRole().name() : null,
-                null,
-                null
-        );
-    }
+
 }

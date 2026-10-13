@@ -9,16 +9,23 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
+import java.time.Duration;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import java.util.List;
 import java.util.Map;
 import org.springframework.web.client.RestClientException;
 @Service
 public class HuggingFaceService {
 
-    private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final RestTemplate restTemplate = createRestTemplate();
 
+    private static RestTemplate createRestTemplate() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(2));
+        factory.setReadTimeout(Duration.ofSeconds(15));
+        return new RestTemplate(factory);
+    }
     // Use a valid model that supports feature extraction via API
     @Value("${embedding.api.url:https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5}")
     private String apiUrl;
@@ -49,8 +56,6 @@ public class HuggingFaceService {
             ResponseEntity<String> response =
                     restTemplate.postForEntity(apiUrl, request, String.class);
 
-            // Print JSON response (optional debug)
-            System.out.println("Embedding JSON: " + response.getBody());
 
             // Parse the first vector
             List<List<Double>> result =

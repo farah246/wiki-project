@@ -9,8 +9,10 @@ public record ProcedureRequest(
         String title,
 
         @NotBlank(message = "Description is required")
+        @Size(max = 50000, message = "Description must be at most 50,000 characters")
         String description,
 
+        @Size(max = 50000, message = "Visual model must be at most 50,000 characters")
         String visualModel
 ) {
 }

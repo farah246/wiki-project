@@ -1,5 +1,7 @@
 package org.example.interfaces.controller;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.example.application.service.SemanticSearchService;
 import org.example.domain.model.SearchResultModel;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,7 +25,7 @@ public class SearchController {
     @GetMapping
     @PreAuthorize("hasAnyRole('DEVELOPER', 'SALES', 'MANAGER', 'ADMIN')")
     public List<SearchResultModel> search(
-            @RequestParam String query
+            @RequestParam @NotBlank @Size(max = 300) String query
     ) {
         return semanticSearchService.search(query, 5);
     }

@@ -9,8 +9,10 @@ public record TechnicalDocRequest(
         String title,
 
         @NotBlank(message = "Content is required")
+        @Size(max = 50000, message = "Content must be at most 50,000 characters")
         String content,
 
+        @Size(max = 50000, message = "Code snippet must be at most 50,000 characters")
         String codeSnippet,
 
         @Size(max = 255, message = "Git reference must be at most 255 characters")

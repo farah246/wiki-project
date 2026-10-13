@@ -6,7 +6,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
-
+import java.util.Arrays;
+import org.example.domain.enums.UserRole;
 import java.util.Collections;
 
 @Component
@@ -33,8 +34,16 @@ public class ClerkJwtAuthenticationConverter
             );
         }
 
-        String authority = "ROLE_" + role.toUpperCase();
+        String normalized = role.trim().toUpperCase();
 
+        boolean knownRole = Arrays.stream(UserRole.values())
+                .anyMatch(r -> r.name().equals(normalized));
+
+        if (!knownRole) {
+            return new JwtAuthenticationToken(jwt, Collections.emptyList());
+        }
+
+        String authority = "ROLE_" + normalized;
         return new JwtAuthenticationToken(
                 jwt,
                 Collections.singletonList(

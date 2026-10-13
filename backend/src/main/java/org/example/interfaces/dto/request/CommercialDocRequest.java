@@ -9,6 +9,7 @@ public record CommercialDocRequest(
         String title,
 
         @NotBlank(message = "Proposal text is required")
+        @Size(max = 50000, message = "Proposal text must be at most 50,000 characters")
         String proposalText,
 
         @NotBlank(message = "Client name is required")
