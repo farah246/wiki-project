@@ -6,7 +6,7 @@ import { getTechnicalDocHistory } from "@/lib/api/doc-history"
 import { DocHistory } from "@/components/documents/doc-history"
 import { canEditTechnicalDocs } from "@/lib/auth/roles"
 import { getCurrentRole } from "@/lib/auth/get-role"
-
+import { MarkdownContent } from "@/components/documents/markdown-content"
 type TechnicalDocPageProps = {
     params: Promise<{
         id: string
@@ -80,8 +80,8 @@ export default async function TechnicalDocPage({
                             </h2>
                         </div>
 
-                        <div className="whitespace-pre-wrap px-6 py-6 text-sm leading-7">
-                            {technicalDoc.content}
+                        <div className="px-6 py-6">
+                            <MarkdownContent>{technicalDoc.content}</MarkdownContent>
                         </div>
                     </section>
 

@@ -1,3 +1,4 @@
+import { MarkdownContent } from "@/components/documents/markdown-content"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft, Pencil } from "lucide-react"
@@ -77,7 +78,7 @@ export default async function ProcedurePage({
 
                         <div className="px-6 py-6">
                             <div className="whitespace-pre-wrap text-sm leading-7">
-                                {procedure.description}
+                                <MarkdownContent>{procedure.description}</MarkdownContent>
                             </div>
                         </div>
                     </article>

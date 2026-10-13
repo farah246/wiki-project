@@ -10,7 +10,7 @@ import {
     canEditTechnicalDocs,
 } from "@/lib/auth/roles"
 import { useCurrentRole } from "@/lib/auth/use-role"
-
+import { toPlainText } from "@/lib/markdown"
 type TechnicalDocListProps = {
     documents: TechnicalDoc[]
 }
@@ -28,7 +28,7 @@ export function TechnicalDocList({ documents }: TechnicalDocListProps) {
             emptyMessage="Create your first technical document to get started."
             noMatchTitle="No matching documents"
             deleteTitle="Delete technical document?"
-            getDescription={(doc) => doc.content}
+            getDescription={(doc) => toPlainText(doc.content)}
             getSearchText={(doc) => [
                 doc.title,
                 doc.content,

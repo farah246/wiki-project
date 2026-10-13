@@ -7,6 +7,7 @@ import { getCommercialDocHistory } from "@/lib/api/doc-history"
 import { DocHistory } from "@/components/documents/doc-history"
 import { canEditCommercialDocs } from "@/lib/auth/roles"
 import { getCurrentRole } from "@/lib/auth/get-role"
+import Markdown from "react-markdown";
 
 type CommercialDocPageProps = {
     params: Promise<{
@@ -79,9 +80,7 @@ export default async function CommercialDocPage({
                     </div>
 
                     <div className="px-6 py-6">
-                        <div className="whitespace-pre-wrap text-sm leading-7">
-                            {document.proposalText}
-                        </div>
+                           <Markdown>{document.proposalText}</Markdown>
                     </div>
                 </article>
 

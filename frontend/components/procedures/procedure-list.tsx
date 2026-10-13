@@ -10,7 +10,7 @@ import {
     canEditProcedures,
 } from "@/lib/auth/roles"
 import { useCurrentRole } from "@/lib/auth/use-role"
-
+import { toPlainText } from "@/lib/markdown"
 type ProcedureListProps = {
     procedures: Procedure[]
 }
@@ -28,7 +28,7 @@ export function ProcedureList({ procedures }: ProcedureListProps) {
             emptyMessage="Create your first procedure to get started."
             noMatchTitle="No matching procedures"
             deleteTitle="Delete procedure?"
-            getDescription={(procedure) => procedure.description}
+            getDescription={(procedure) => toPlainText(procedure.description)}
             getSearchText={(procedure) => [
                 procedure.title,
                 procedure.description,

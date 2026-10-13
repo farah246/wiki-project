@@ -2,7 +2,13 @@
 
 import { startTransition, useOptimistic, useState } from "react"
 import Link from "next/link"
-import { Pencil, Trash2, type LucideIcon } from "lucide-react"
+import {
+    ChevronLeft,
+    ChevronRight,
+    Pencil,
+    Trash2,
+    type LucideIcon,
+} from "lucide-react"
 
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
 import { SearchBar } from "@/components/ui/search-bar"
@@ -10,7 +16,14 @@ import { SearchBar } from "@/components/ui/search-bar"
 // Shared list for every document type. The type-specific lists
 // (technical docs, commercial docs, procedures) only describe what differs:
 // the base path, the texts, which fields to show and which to search.
-type DocumentListProps<T extends { id: number; title: string }> = {
+type ListItem = {
+    id: number
+    title: string
+    createdAt: string
+    updatedAt: string
+}
+
+type DocumentListProps<T extends ListItem> = {
     items: T[]
     basePath: string
     icon: LucideIcon
@@ -30,23 +43,70 @@ type DocumentListProps<T extends { id: number; title: string }> = {
     onDelete: (id: number) => Promise<void>
 }
 
-export function DocumentList<T extends { id: number; title: string }>({
-                                                                          items,
-                                                                          basePath,
-                                                                          icon: Icon,
-                                                                          searchPlaceholder,
-                                                                          emptyTitle,
-                                                                          emptyMessage,
-                                                                          noMatchTitle,
-                                                                          deleteTitle,
-                                                                          getSubtitle,
-                                                                          getDescription,
-                                                                          getSearchText,
-                                                                          canEdit,
-                                                                          canDelete,
-                                                                          onDelete,
-                                                                      }: DocumentListProps<T>) {
+type SortKey = "updated" | "created" | "title-asc" | "title-desc"
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+    { value: "updated", label: "Recently updated" },
+    { value: "created", label: "Newest first" },
+    { value: "title-asc", label: "Title A–Z" },
+    { value: "title-desc", label: "Title Z–A" },
+]
+
+const PAGE_SIZE = 10
+
+function timestamp(value: string | null | undefined) {
+    const time = value ? Date.parse(value) : NaN
+    return Number.isNaN(time) ? 0 : time
+}
+
+function compareItems(a: ListItem, b: ListItem, sort: SortKey) {
+    switch (sort) {
+        case "created":
+            return timestamp(b.createdAt) - timestamp(a.createdAt)
+        case "title-asc":
+            return a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
+        case "title-desc":
+            return b.title.localeCompare(a.title, undefined, { sensitivity: "base" })
+        default:
+            return timestamp(b.updatedAt) - timestamp(a.updatedAt)
+    }
+}
+
+// Fixed locale and time zone so the server and the browser render the same text
+function formatDate(value: string | null | undefined) {
+    if (!value) return ""
+
+    const time = Date.parse(value)
+
+    if (Number.isNaN(time)) return ""
+
+    return new Date(time).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC",
+    })
+}
+
+export function DocumentList<T extends ListItem>({
+                                                     items,
+                                                     basePath,
+                                                     icon: Icon,
+                                                     searchPlaceholder,
+                                                     emptyTitle,
+                                                     emptyMessage,
+                                                     noMatchTitle,
+                                                     deleteTitle,
+                                                     getSubtitle,
+                                                     getDescription,
+                                                     getSearchText,
+                                                     canEdit,
+                                                     canDelete,
+                                                     onDelete,
+                                                 }: DocumentListProps<T>) {
     const [searchQuery, setSearchQuery] = useState("")
+    const [sort, setSort] = useState<SortKey>("updated")
+    const [page, setPage] = useState(1)
 
     const [optimisticItems, removeOptimistically] = useOptimistic(
         items,
@@ -68,6 +128,30 @@ export function DocumentList<T extends { id: number; title: string }>({
         )
     })
 
+    const sortedItems = [...filteredItems].sort((a, b) =>
+        compareItems(a, b, sort)
+    )
+
+    const totalPages = Math.max(1, Math.ceil(sortedItems.length / PAGE_SIZE))
+
+    // Clamp, so deleting the last item of a page never leaves an empty page
+    const currentPage = Math.min(page, totalPages)
+
+    const pageItems = sortedItems.slice(
+        (currentPage - 1) * PAGE_SIZE,
+        currentPage * PAGE_SIZE
+    )
+
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value)
+        setPage(1)
+    }
+
+    const handleSortChange = (value: SortKey) => {
+        setSort(value)
+        setPage(1)
+    }
+
     const deleteItem = async (itemId: number) => {
         startTransition(() => {
             removeOptimistically(itemId)
@@ -81,13 +165,30 @@ export function DocumentList<T extends { id: number; title: string }>({
     return (
         <>
             <div className="space-y-6">
-                <SearchBar
-                    placeholder={searchPlaceholder}
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                />
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <SearchBar
+                        placeholder={searchPlaceholder}
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                    />
 
-                {filteredItems.length === 0 ? (
+                    <select
+                        value={sort}
+                        onChange={(event) =>
+                            handleSortChange(event.target.value as SortKey)
+                        }
+                        aria-label="Sort documents"
+                        className="h-12 shrink-0 rounded-xl border bg-background px-4 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-950"
+                    >
+                        {SORT_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                {sortedItems.length === 0 ? (
                     <div className="rounded-2xl border bg-card px-6 py-12 text-center">
                         <Icon className="mx-auto h-10 w-10 text-muted-foreground" />
 
@@ -102,62 +203,106 @@ export function DocumentList<T extends { id: number; title: string }>({
                         </p>
                     </div>
                 ) : (
-                    <div className="space-y-4">
-                        {filteredItems.map((item) => (
-                            <article
-                                key={item.id}
-                                className="rounded-2xl border bg-card p-5 transition hover:shadow-sm"
-                            >
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="min-w-0">
-                                        <Link
-                                            href={`${basePath}/${item.id}`}
-                                            className="text-lg font-semibold tracking-tight hover:text-violet-600"
-                                        >
-                                            {item.title}
-                                        </Link>
+                    <>
+                        <p className="text-sm text-muted-foreground">
+                            {sortedItems.length}{" "}
+                            {sortedItems.length === 1 ? "result" : "results"}
+                        </p>
 
-                                        {getSubtitle && (
-                                            <p className="mt-2 text-sm font-medium text-muted-foreground">
-                                                {getSubtitle(item)}
-                                            </p>
-                                        )}
-
-                                        <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                                            {getDescription(item)}
-                                        </p>
-                                    </div>
-
-                                    <Icon className="h-5 w-5 shrink-0 text-violet-600" />
-                                </div>
-
-                                {(canEdit || canDelete) && (
-                                    <div className="mt-5 flex items-center gap-2">
-                                        {canEdit && (
+                        <div className="space-y-4">
+                            {pageItems.map((item) => (
+                                <article
+                                    key={item.id}
+                                    className="rounded-2xl border bg-card p-5 transition hover:shadow-sm"
+                                >
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="min-w-0">
                                             <Link
-                                                href={`${basePath}/${item.id}/edit`}
-                                                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-muted"
+                                                href={`${basePath}/${item.id}`}
+                                                className="text-lg font-semibold tracking-tight hover:text-violet-600"
                                             >
-                                                <Pencil className="h-4 w-4" />
-                                                Edit
+                                                {item.title}
                                             </Link>
-                                        )}
 
-                                        {canDelete && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setItemToDelete(item)}
-                                                className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                                Delete
-                                            </button>
-                                        )}
+                                            {getSubtitle && (
+                                                <p className="mt-2 text-sm font-medium text-muted-foreground">
+                                                    {getSubtitle(item)}
+                                                </p>
+                                            )}
+
+                                            <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                                                {getDescription(item)}
+                                            </p>
+
+                                            {formatDate(item.updatedAt) && (
+                                                <p className="mt-3 text-xs text-muted-foreground">
+                                                    Updated {formatDate(item.updatedAt)}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <Icon className="h-5 w-5 shrink-0 text-violet-600" />
                                     </div>
-                                )}
-                            </article>
-                        ))}
-                    </div>
+
+                                    {(canEdit || canDelete) && (
+                                        <div className="mt-5 flex items-center gap-2">
+                                            {canEdit && (
+                                                <Link
+                                                    href={`${basePath}/${item.id}/edit`}
+                                                    className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-muted"
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                    Edit
+                                                </Link>
+                                            )}
+
+                                            {canDelete && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setItemToDelete(item)}
+                                                    className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                    Delete
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </article>
+                            ))}
+                        </div>
+
+                        {totalPages > 1 && (
+                            <nav
+                                aria-label="Pagination"
+                                className="flex items-center justify-between gap-4"
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => setPage(currentPage - 1)}
+                                    disabled={currentPage <= 1}
+                                    className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+                                >
+                                    <ChevronLeft className="h-4 w-4" />
+                                    Previous
+                                </button>
+
+                                <span className="text-sm text-muted-foreground">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setPage(currentPage + 1)}
+                                    disabled={currentPage >= totalPages}
+                                    className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+                                >
+                                    Next
+                                    <ChevronRight className="h-4 w-4" />
+                                </button>
+                            </nav>
+                        )}
+                    </>
                 )}
             </div>
 

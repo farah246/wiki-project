@@ -10,7 +10,7 @@ import {
     canEditCommercialDocs,
 } from "@/lib/auth/roles"
 import { useCurrentRole } from "@/lib/auth/use-role"
-
+import { toPlainText } from "@/lib/markdown"
 type CommercialDocListProps = {
     documents: CommercialDoc[]
 }
@@ -29,7 +29,7 @@ export function CommercialDocList({ documents }: CommercialDocListProps) {
             noMatchTitle="No matching documents"
             deleteTitle="Delete commercial document?"
             getSubtitle={(doc) => doc.clientName}
-            getDescription={(doc) => doc.proposalText}
+            getDescription={(doc) => toPlainText(doc.proposalText)}
             getSearchText={(doc) => [
                 doc.title,
                 doc.proposalText,
