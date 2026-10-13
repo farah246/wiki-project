@@ -10,17 +10,10 @@ import { useState } from "react"
 import { useAuth } from "@clerk/nextjs"
 
 import { SearchBar } from "@/components/ui/search-bar"
-import type { TechnicalDoc } from "@/lib/types/technical-doc"
-import type { CommercialDoc } from "@/lib/types/commercial-doc"
-import type { Procedure } from "@/lib/types/procedure"
 import type { ReactNode } from "react"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
-type GlobalSearchProps = {
-    technicalDocs: TechnicalDoc[]
-    commercialDocs: CommercialDoc[]
-    procedures: Procedure[]
-}
+
 
 type SearchResult = {
     documentId: number
@@ -68,11 +61,7 @@ function HighlightMatch({
     )
 }
 
-export function GlobalSearch({
-                                 technicalDocs,
-                                 commercialDocs,
-                                 procedures,
-                             }: GlobalSearchProps) {
+export function GlobalSearch() {
     const { getToken } = useAuth()
 
     const [query, setQuery] = useState("")

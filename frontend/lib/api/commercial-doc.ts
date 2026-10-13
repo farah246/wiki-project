@@ -1,4 +1,4 @@
-import { serverApi } from "@/lib/api/server-api"
+import { serverApi, orNotFound } from "@/lib/api/server-api"
 import type { CommercialDoc } from "@/lib/types/commercial-doc"
 
 export async function getCommercialDocs() {
@@ -6,5 +6,5 @@ export async function getCommercialDocs() {
 }
 
 export async function getCommercialDoc(id: number) {
-    return serverApi.get<CommercialDoc>(`/api/commercial-docs/${id}`)
+    return orNotFound(serverApi.get<CommercialDoc>(`/api/commercial-docs/${id}`))
 }

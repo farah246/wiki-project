@@ -1,4 +1,4 @@
-import { serverApi } from "@/lib/api/server-api"
+import { serverApi,orNotFound } from "@/lib/api/server-api"
 import type { Procedure } from "@/lib/types/procedure"
 
 export async function getProcedures() {
@@ -6,5 +6,5 @@ export async function getProcedures() {
 }
 
 export async function getProcedure(id: number) {
-    return serverApi.get<Procedure>(`/api/procedures/${id}`)
+    return orNotFound(serverApi.get<Procedure>(`/api/procedures/${id}`))
 }

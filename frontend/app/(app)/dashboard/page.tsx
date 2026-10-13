@@ -12,8 +12,22 @@ import { getCommercialDocs } from "@/lib/api/commercial-doc"
 import { getProcedures } from "@/lib/api/procedures"
 import { getCurrentUser } from "@/lib/api/users"
 import { getCurrentRole } from "@/lib/auth/get-role"
+import {
+    canCreateCommercialDocs,
+    canCreateProcedures,
+    canCreateTechnicalDocs,
+} from "@/lib/auth/roles"
 import { DocumentCard } from "@/components/documents/document-card"
 import { GlobalSearch } from "@/components/dashboard/global-search"
+
+type RecentItem = {
+    key: string
+    title: string
+    description: string
+    type: "technical" | "commercial" | "procedure"
+    href: string
+    date: string
+}
 
 export default async function Dashboard() {
     const clerkRole = await getCurrentRole()
@@ -30,14 +44,54 @@ export default async function Dashboard() {
         getCurrentUser(),
     ])
 
-    const recentDocs = [...technicalDocs]
-        .sort((a, b) => {
-            const dateA = a.updatedAt || a.createdAt || ""
-            const dateB = b.updatedAt || b.createdAt || ""
+    // Latest activity across the three document types
+    const recentDocs: RecentItem[] = [
+        ...technicalDocs.map((doc) => ({
+            key: `technical-${doc.id}`,
+            title: doc.title,
+            description: doc.content,
+            type: "technical" as const,
+            href: `/technical-docs/${doc.id}`,
+            date: doc.updatedAt || doc.createdAt || "",
+        })),
+        ...commercialDocs.map((doc) => ({
+            key: `commercial-${doc.id}`,
+            title: doc.title,
+            description: doc.proposalText,
+            type: "commercial" as const,
+            href: `/commercial-docs/${doc.id}`,
+            date: doc.updatedAt || doc.createdAt || "",
+        })),
+        ...procedures.map((doc) => ({
+            key: `procedure-${doc.id}`,
+            title: doc.title,
+            description: doc.description,
+            type: "procedure" as const,
+            href: `/procedures/${doc.id}`,
+            date: doc.updatedAt || doc.createdAt || "",
+        })),
+    ]
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 6)
 
-            return dateB.localeCompare(dateA)
-        })
-        .slice(0, 5)
+    // Only what this role is allowed to create
+    const quickActions = [
+        {
+            label: "New technical document",
+            href: "/technical-docs/new",
+            allowed: canCreateTechnicalDocs(clerkRole),
+        },
+        {
+            label: "New commercial document",
+            href: "/commercial-docs/new",
+            allowed: canCreateCommercialDocs(clerkRole),
+        },
+        {
+            label: "New procedure",
+            href: "/procedures/new",
+            allowed: canCreateProcedures(clerkRole),
+        },
+    ].filter((action) => action.allowed)
 
     const firstName =
         currentUser.username?.split(" ")[0] || "there"
@@ -65,18 +119,17 @@ export default async function Dashboard() {
 
                 {/* Global search */}
                 <section className="mb-8">
-                    <GlobalSearch
-                        technicalDocs={technicalDocs}
-                        commercialDocs={commercialDocs}
-                        procedures={procedures}
-                    />
+                    <GlobalSearch />
                 </section>
 
                 {/* Statistics */}
-                <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 
                     {/* Technical documents */}
-                    <div className="rounded-2xl border bg-card p-5 transition hover:shadow-sm">
+                    <Link
+                        href="/technical-docs"
+                        className="rounded-2xl border bg-card p-5 transition hover:shadow-sm"
+                    >
                         <div className="flex items-center justify-between">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/30">
                                 <FileText className="h-5 w-5" />
@@ -94,10 +147,13 @@ export default async function Dashboard() {
                         <p className="mt-1 text-sm text-muted-foreground">
                             Technical documents
                         </p>
-                    </div>
+                    </Link>
 
                     {/* Commercial documents */}
-                    <div className="rounded-2xl border bg-card p-5 transition hover:shadow-sm">
+                    <Link
+                        href="/commercial-docs"
+                        className="rounded-2xl border bg-card p-5 transition hover:shadow-sm"
+                    >
                         <div className="flex items-center justify-between">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/30">
                                 <BriefcaseBusiness className="h-5 w-5" />
@@ -115,10 +171,13 @@ export default async function Dashboard() {
                         <p className="mt-1 text-sm text-muted-foreground">
                             Commercial documents
                         </p>
-                    </div>
+                    </Link>
 
                     {/* Procedures */}
-                    <div className="rounded-2xl border bg-card p-5 transition hover:shadow-sm">
+                    <Link
+                        href="/procedures"
+                        className="rounded-2xl border bg-card p-5 transition hover:shadow-sm"
+                    >
                         <div className="flex items-center justify-between">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/30">
                                 <ClipboardList className="h-5 w-5" />
@@ -136,22 +195,7 @@ export default async function Dashboard() {
                         <p className="mt-1 text-sm text-muted-foreground">
                             Procedures
                         </p>
-                    </div>
-
-                    {/* Role */}
-                    <div className="rounded-2xl border bg-card p-5 transition hover:shadow-sm">
-                        <p className="text-sm text-muted-foreground">
-                            Your role
-                        </p>
-
-                        <p className="mt-5 text-2xl font-semibold capitalize">
-                            {clerkRole?.toLowerCase() || "unknown"}
-                        </p>
-
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Workspace access
-                        </p>
-                    </div>
+                    </Link>
                 </section>
 
                 {/* Main content */}
@@ -160,36 +204,25 @@ export default async function Dashboard() {
                     {/* Recent documents */}
                     <div className="overflow-hidden rounded-2xl border bg-card">
 
-                        <div className="flex items-center justify-between border-b px-6 py-5">
-                            <div>
-                                <h2 className="font-semibold">
-                                    Recent documents
-                                </h2>
+                        <div className="border-b px-6 py-5">
+                            <h2 className="font-semibold">
+                                Recent documents
+                            </h2>
 
-                                <p className="mt-1 text-sm text-muted-foreground">
-                                    Your latest technical knowledge
-                                </p>
-                            </div>
-
-                            <Link
-                                href="/technical-docs"
-                                className="flex items-center gap-1 text-sm font-medium text-violet-600 hover:text-violet-700"
-                            >
-                                View all
-
-                                <ArrowRight className="h-4 w-4" />
-                            </Link>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Latest activity across your workspace
+                            </p>
                         </div>
 
                         <div className="divide-y">
                             {recentDocs.length > 0 ? (
                                 recentDocs.map((doc) => (
                                     <DocumentCard
-                                        key={doc.id}
+                                        key={doc.key}
                                         title={doc.title}
-                                        description={doc.content}
-                                        type="technical"
-                                        href={`/technical-docs/${doc.id}`}
+                                        description={doc.description}
+                                        type={doc.type}
+                                        href={doc.href}
                                     />
                                 ))
                             ) : (
@@ -203,17 +236,19 @@ export default async function Dashboard() {
                                     </p>
 
                                     <p className="mt-1 text-sm text-muted-foreground">
-                                        Your technical documents will appear
-                                        here.
+                                        Documents will appear here as your
+                                        team creates them.
                                     </p>
 
-                                    <Link
-                                        href="/technical-docs/new"
-                                        className="mt-5 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700"
-                                    >
-                                        Create document
-                                        <ArrowRight className="h-4 w-4" />
-                                    </Link>
+                                    {quickActions.length > 0 && (
+                                        <Link
+                                            href={quickActions[0].href}
+                                            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700"
+                                        >
+                                            {quickActions[0].label}
+                                            <ArrowRight className="h-4 w-4" />
+                                        </Link>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -244,14 +279,17 @@ export default async function Dashboard() {
                         </div>
 
                         <div className="mt-4 space-y-2">
-                            <Link
-                                href="/technical-docs"
-                                className="flex items-center justify-between rounded-xl border px-4 py-3 text-sm font-medium transition hover:bg-muted"
-                            >
-                                Browse documents
+                            {quickActions.map((action) => (
+                                <Link
+                                    key={action.href}
+                                    href={action.href}
+                                    className="flex items-center justify-between rounded-xl border px-4 py-3 text-sm font-medium transition hover:bg-muted"
+                                >
+                                    {action.label}
 
-                                <ArrowRight className="h-4 w-4" />
-                            </Link>
+                                    <ArrowRight className="h-4 w-4" />
+                                </Link>
+                            ))}
 
                             <Link
                                 href="/user-profile"

@@ -1,6 +1,7 @@
 import "server-only"
 
 import { auth } from "@clerk/nextjs/server"
+import { notFound } from "next/navigation"
 
 const API_URL =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
@@ -30,7 +31,8 @@ async function serverApiFetch<T>(
     if (!response.ok) {
         const errorText = await response.text()
 
-        throw new Error(
+        throw new ApiError(
+            response.status,
             `API request failed: ${response.status} ${errorText}`
         )
     }
@@ -47,7 +49,21 @@ async function serverApiFetch<T>(
 
     return JSON.parse(responseText)
 }
+export class ApiError extends Error {
+    constructor(public status: number, message: string) {
+        super(message)
+        this.name = "ApiError"
+    }
+}
 
+export async function orNotFound<T>(request: Promise<T>): Promise<T> {
+    try {
+        return await request
+    } catch (error) {
+        if (error instanceof ApiError && error.status === 404) notFound()
+        throw error
+    }
+}
 export const serverApi = {
     get: <T>(endpoint: string) =>
         serverApiFetch<T>(endpoint),
