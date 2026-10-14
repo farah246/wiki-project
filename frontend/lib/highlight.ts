@@ -98,3 +98,40 @@ export function splitByTerms(text: string, terms: string[]): TextPart[] {
 
     return parts.length > 0 ? parts : [{ text, match: false }]
 }
+
+
+// Number of characters of a description that are visible in a list card
+// (two lines of text). A match further away would be hidden by line-clamp.
+const VISIBLE_CHARS = 140
+
+/**
+ * Returns the text, starting a little before the first match when that match
+ * would be out of sight. Otherwise the text is returned unchanged.
+ */
+export function excerptAround(text: string, terms: string[]): string {
+    if (!text || terms.length === 0) return text
+
+    const lower = text.toLowerCase()
+
+    let index = -1
+    let length = 0
+
+    for (const term of terms) {
+        const found = lower.indexOf(term.toLowerCase())
+
+        if (found !== -1 && (index === -1 || found < index)) {
+            index = found
+            length = term.length
+        }
+    }
+
+    // no match in this text, or already visible
+    if (index === -1 || index + length <= VISIBLE_CHARS) return text
+
+    // start ~40 characters before the match, on a word boundary
+    const start = Math.max(0, index - 40)
+    const space = text.indexOf(" ", start)
+    const from = space !== -1 && space < index ? space + 1 : start
+
+    return "\u2026" + text.slice(from)
+}

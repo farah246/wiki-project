@@ -18,6 +18,7 @@ public class DocHistoryEntityMapper {
         entity.setAction(domainObject.action());
         entity.setChange(domainObject.change());
         entity.setDocVersion(domainObject.docVersion());
+        entity.setSnapshot(domainObject.snapshot());
 
         if (domainObject.user() != null) {
             User user = new User();
@@ -79,7 +80,8 @@ public class DocHistoryEntityMapper {
                 entityObject.getChange(),
                 entityObject.getCreatedAt(),
                 entityObject.getUpdatedAt(),
-                entityObject.getDocVersion()
+                entityObject.getDocVersion(),
+                entityObject.getSnapshot()
         );
     }
 }

@@ -46,6 +46,11 @@ public class DocHistory {
     @Column(name = "version_number")
     private Integer docVersion;
 
+    // The document as it was after this change (JSON); null for rows recorded
+    // before versions were saved
+    @Column(name = "snapshot", columnDefinition = "TEXT")
+    private String snapshot;
+
     // getters, setters, constructors
     // Add this to your DocHistory class (under the fields)
     public DocHistory() {}
@@ -102,6 +107,10 @@ public class DocHistory {
     public Integer getDocVersion() { return docVersion; }
 
     public void setDocVersion(Integer docVersion) { this.docVersion = docVersion; }
+
+    public String getSnapshot() { return snapshot; }
+
+    public void setSnapshot(String snapshot) { this.snapshot = snapshot; }
 
     // Helper method to set the correct document reference
     public void setDocument(Object document) {

@@ -68,7 +68,8 @@ public class ProcedureService {
                 DocumentType.PROCEDURE,
                 savedProcedure.id(),
                 savedProcedure.title(),
-                currentUser
+                currentUser,
+                DocSnapshot.of(savedProcedure)
         );
 
         documentEmbeddingService.generateEmbeddingsForProcedure(
@@ -107,7 +108,8 @@ public class ProcedureService {
                 DocumentType.PROCEDURE,
                 id,
                 currentUserService.getCurrentUser(authentication),
-                changedFields(existingProcedure, updatedProcedure)
+                changedFields(existingProcedure, updatedProcedure),
+                DocSnapshot.of(savedProcedure)
         );
 
         embeddingService.deleteEmbeddingsForProcedure(id);

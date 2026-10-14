@@ -128,7 +128,18 @@ export default async function TechnicalDocPage({
                         </section>
                     )}
 
-                    <DocHistory entries={history} />
+                    <DocHistory
+                        entries={history}
+                        kind="technical"
+                        docId={technicalDoc.id}
+                        current={{
+                            title: technicalDoc.title,
+                            content: technicalDoc.content,
+                            codeSnippet: technicalDoc.codeSnippet,
+                            gitRef: technicalDoc.gitRef,
+                        }}
+                        canRestore={canEdit}
+                    />
                 </div>
             </div>
 

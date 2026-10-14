@@ -78,12 +78,22 @@ export default async function CommercialDocPage({
                     </div>
 
                     <div className="px-6 py-6">
-                           <MarkdownContent>{document.proposalText}</MarkdownContent>
+                        <MarkdownContent>{document.proposalText}</MarkdownContent>
                     </div>
                 </article>
 
                 <div className="mt-6">
-                    <DocHistory entries={history} />
+                    <DocHistory
+                        entries={history}
+                        kind="commercial"
+                        docId={document.id}
+                        current={{
+                            title: document.title,
+                            proposalText: document.proposalText,
+                            clientName: document.clientName,
+                        }}
+                        canRestore={canEdit}
+                    />
                 </div>
 
                 <div className="mt-6 text-xs text-muted-foreground">

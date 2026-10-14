@@ -101,7 +101,17 @@ export default async function ProcedurePage({
                 </div>
 
                 <div className="mt-6">
-                    <DocHistory entries={history} />
+                    <DocHistory
+                        entries={history}
+                        kind="procedure"
+                        docId={procedure.id}
+                        current={{
+                            title: procedure.title,
+                            description: procedure.description,
+                            visualModel: procedure.visualModel,
+                        }}
+                        canRestore={canEdit}
+                    />
                 </div>
 
                 <div className="mt-6 text-xs text-muted-foreground">

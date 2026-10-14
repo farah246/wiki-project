@@ -17,8 +17,10 @@ import {
 } from "lucide-react"
 
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
+import { HighlightText } from "@/components/documents/highlight-text"
 import { SearchBar } from "@/components/ui/search-bar"
 import { formatByline } from "@/lib/format"
+import { excerptAround } from "@/lib/highlight"
 import {
     listViewToQuery,
     mergeListQuery,
@@ -161,6 +163,10 @@ export function DocumentList<T extends ListItem>({
 
     const query = view.filter.toLowerCase().trim()
 
+    // The filter keeps items containing the whole phrase, so the whole phrase
+    // is what gets highlighted
+    const terms = query ? [view.filter.trim()] : []
+
     const filteredItems = optimisticItems.filter((item) => {
         if (!query) {
             return true
@@ -286,17 +292,29 @@ export function DocumentList<T extends ListItem>({
                                                     href={linkTo(item.id)}
                                                     className="text-lg font-semibold tracking-tight hover:text-violet-600"
                                                 >
-                                                    {item.title}
+                                                    <HighlightText
+                                                        text={item.title}
+                                                        terms={terms}
+                                                    />
                                                 </Link>
 
                                                 {getSubtitle && (
                                                     <p className="mt-2 text-sm font-medium text-muted-foreground">
-                                                        {getSubtitle(item)}
+                                                        <HighlightText
+                                                            text={getSubtitle(item)}
+                                                            terms={terms}
+                                                        />
                                                     </p>
                                                 )}
 
                                                 <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                                                    {getDescription(item)}
+                                                    <HighlightText
+                                                        text={excerptAround(
+                                                            getDescription(item),
+                                                            terms
+                                                        )}
+                                                        terms={terms}
+                                                    />
                                                 </p>
 
                                                 {byline && (

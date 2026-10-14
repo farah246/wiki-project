@@ -68,7 +68,8 @@ public class CommercialDocService {
                 DocumentType.COMMERCIAL_DOC,
                 savedCommercialDoc.id(),
                 savedCommercialDoc.title(),
-                currentUser
+                currentUser,
+                DocSnapshot.of(savedCommercialDoc)
         );
 
         documentEmbeddingService.generateEmbeddingsForCommercialDoc(
@@ -107,7 +108,8 @@ public class CommercialDocService {
                 DocumentType.COMMERCIAL_DOC,
                 id,
                 currentUserService.getCurrentUser(authentication),
-                changedFields(existingDoc, updatedDoc)
+                changedFields(existingDoc, updatedDoc),
+                DocSnapshot.of(savedDoc)
         );
 
         embeddingService.deleteEmbeddingsForCommercialDoc(id);

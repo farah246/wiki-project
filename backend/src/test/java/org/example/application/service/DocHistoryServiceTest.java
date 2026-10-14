@@ -1,5 +1,6 @@
 package org.example.application.service;
 
+import org.example.application.exception.NotFoundException;
 import org.example.application.gateway.DocHistoryGateway;
 import org.example.domain.enums.DocumentType;
 import org.example.domain.model.DocHistoryModel;
@@ -13,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -128,5 +130,90 @@ class DocHistoryServiceTest {
         assertFalse(DocHistoryService.changed("a", "a"));
         assertTrue(DocHistoryService.changed("a", "b"));
         assertTrue(DocHistoryService.changed(null, "a"));
+    }
+
+    // ---- saved versions (snapshots) ----
+
+    private static final String SNAPSHOT =
+            "{\"title\":\"Offer\",\"proposalText\":\"Text\",\"clientName\":\"Acme\"}";
+
+    private DocHistoryModel entry(Long id, String snapshot) {
+        return new DocHistoryModel(
+                id, 10L, null, null, user,
+                "UPDATED", "Changed: title", null, null, 2, snapshot);
+    }
+
+    @Test
+    void recordCreated_withSnapshot_savesIt() {
+        service.recordCreated(
+                DocumentType.COMMERCIAL_DOC, 7L, "Offer", user, SNAPSHOT);
+
+        DocHistoryModel row = savedRow();
+        assertEquals(SNAPSHOT, row.snapshot());
+        assertTrue(row.hasSnapshot());
+        assertEquals(1, row.docVersion());
+    }
+
+    @Test
+    void recordCreated_withoutSnapshot_savesNone() {
+        service.recordCreated(
+                DocumentType.COMMERCIAL_DOC, 7L, "Offer", user);
+
+        DocHistoryModel row = savedRow();
+        assertNull(row.snapshot());
+        assertFalse(row.hasSnapshot());
+    }
+
+    @Test
+    void recordUpdated_withSnapshot_savesIt() {
+        when(gateway.latestVersionByDocument(DocumentType.TECHNICAL_DOC, 10L))
+                .thenReturn(1);
+
+        service.recordUpdated(
+                DocumentType.TECHNICAL_DOC, 10L, user,
+                List.of("title"), SNAPSHOT);
+
+        DocHistoryModel row = savedRow();
+        assertEquals(SNAPSHOT, row.snapshot());
+        assertEquals(2, row.docVersion());
+    }
+
+    @Test
+    void recordUpdated_withoutChangedFields_savesNothing_evenWithASnapshot() {
+        service.recordUpdated(
+                DocumentType.TECHNICAL_DOC, 10L, user,
+                List.of(), SNAPSHOT);
+
+        verifyNoInteractions(gateway);
+    }
+
+    @Test
+    void recordDeleted_savesNoSnapshot() {
+        service.recordDeleted(
+                DocumentType.PROCEDURE, 5L, "Deploy", user);
+
+        assertNull(savedRow().snapshot());
+    }
+
+    @Test
+    void getSnapshot_returnsTheSavedVersion() {
+        when(gateway.findById(9L)).thenReturn(Optional.of(entry(9L, SNAPSHOT)));
+
+        assertEquals(SNAPSHOT, service.getSnapshot(9L));
+    }
+
+    @Test
+    void getSnapshot_entryWithoutSnapshot_isNotFound() {
+        // rows recorded before versions were saved
+        when(gateway.findById(9L)).thenReturn(Optional.of(entry(9L, null)));
+
+        assertThrows(NotFoundException.class, () -> service.getSnapshot(9L));
+    }
+
+    @Test
+    void getSnapshot_unknownEntry_isNotFound() {
+        when(gateway.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> service.getSnapshot(99L));
     }
 }

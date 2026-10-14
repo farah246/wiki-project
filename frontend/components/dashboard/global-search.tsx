@@ -9,7 +9,9 @@ import {
 import { useState } from "react"
 import { useAuth } from "@clerk/nextjs"
 
+import { HighlightText } from "@/components/documents/highlight-text"
 import { SearchBar } from "@/components/ui/search-bar"
+import { excerptAround, parseHighlightQuery } from "@/lib/highlight"
 import type { ReactNode } from "react"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
@@ -23,44 +25,6 @@ type SearchResult = {
     similarity: number
 }
 
-function HighlightMatch({
-                            text,
-                            query,
-                        }: {
-    text: string
-    query: string
-}) {
-    if (!query.trim()) {
-        return <>{text}</>
-    }
-
-    const escapedQuery = query.replace(
-        /[.*+?^${}()|[\]\\]/g,
-        "\\$&"
-    )
-
-    const parts = text.split(
-        new RegExp(`(${escapedQuery})`, "gi")
-    )
-
-    return (
-        <>
-            {parts.map((part, index) =>
-                part.toLowerCase() === query.toLowerCase() ? (
-                    <mark
-                        key={index}
-                        className="rounded bg-violet-100 px-0.5 text-violet-900 dark:bg-violet-900/40 dark:text-violet-200"
-                    >
-                        {part}
-                    </mark>
-                ) : (
-                    <span key={index}>{part}</span>
-                )
-            )}
-        </>
-    )
-}
-
 export function GlobalSearch() {
     const { getToken } = useAuth()
 
@@ -69,6 +33,9 @@ export function GlobalSearch() {
     const [searchResults, setSearchResults] = useState<SearchResult[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [searchError, setSearchError] = useState<string | null>(null)
+
+    // words of the searched query, highlighted in titles and excerpts
+    const terms = parseHighlightQuery(searchQuery)
 
     const handleSearch = async () => {
         const trimmedQuery = query.trim()
@@ -221,14 +188,20 @@ export function GlobalSearch() {
 
                                 <div className="min-w-0">
                                     <p className="truncate text-sm font-medium">
-                                        <HighlightMatch
+                                        <HighlightText
                                             text={result.title}
-                                            query={searchQuery}
+                                            terms={terms}
                                         />
                                     </p>
 
                                     <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                                        {result.chunkContent}
+                                        <HighlightText
+                                            text={excerptAround(
+                                                result.chunkContent,
+                                                terms
+                                            )}
+                                            terms={terms}
+                                        />
                                     </p>
                                 </div>
                             </Link>

@@ -1,5 +1,6 @@
 package org.example.application.service;
 
+import org.example.application.exception.NotFoundException;
 import org.example.application.gateway.DocHistoryGateway;
 import org.example.domain.enums.DocumentType;
 import org.example.domain.model.DocHistoryModel;
@@ -42,6 +43,14 @@ public class DocHistoryService {
         return docHistoryGateway.findByDocument(type, docId);
     }
 
+    // The saved version (JSON) of one history entry
+    public String getSnapshot(Long historyId) {
+        return docHistoryGateway.findById(historyId)
+                .map(DocHistoryModel::snapshot)
+                .orElseThrow(() ->
+                        new NotFoundException("No saved version for this entry"));
+    }
+
     // ---- recording (called by the document services only) ----
 
     public void recordCreated(
@@ -50,8 +59,19 @@ public class DocHistoryService {
             String title,
             UserModel user
     ) {
+        recordCreated(type, docId, title, user, null);
+    }
+
+    // snapshot: the document as it is after the creation (JSON), or null
+    public void recordCreated(
+            DocumentType type,
+            Long docId,
+            String title,
+            UserModel user,
+            String snapshot
+    ) {
         record(type, docId, user, "CREATED",
-                "Created \"" + title + "\"", 1);
+                "Created \"" + title + "\"", 1, snapshot);
     }
 
     public void recordUpdated(
@@ -59,6 +79,17 @@ public class DocHistoryService {
             Long docId,
             UserModel user,
             List<String> changedFields
+    ) {
+        recordUpdated(type, docId, user, changedFields, null);
+    }
+
+    // snapshot: the document as it is after the update (JSON), or null
+    public void recordUpdated(
+            DocumentType type,
+            Long docId,
+            UserModel user,
+            List<String> changedFields,
+            String snapshot
     ) {
         if (changedFields.isEmpty()) {
             return;
@@ -72,7 +103,8 @@ public class DocHistoryService {
         int version = Math.max(latest, 1) + 1;
 
         record(type, docId, user, "UPDATED",
-                "Changed: " + String.join(", ", changedFields), version);
+                "Changed: " + String.join(", ", changedFields), version,
+                snapshot);
     }
 
     @Transactional
@@ -87,7 +119,7 @@ public class DocHistoryService {
         // The row is no longer linked to a document (it is being deleted);
         // the description keeps what was deleted.
         record(type, null, user, "DELETED",
-                "Deleted " + label(type) + " \"" + title + "\"", null);
+                "Deleted " + label(type) + " \"" + title + "\"", null, null);
     }
 
     // null and blank are treated as the same value
@@ -104,7 +136,8 @@ public class DocHistoryService {
             UserModel user,
             String action,
             String change,
-            Integer version
+            Integer version,
+            String snapshot
     ) {
         Long technicalDocId =
                 type == DocumentType.TECHNICAL_DOC ? docId : null;
@@ -123,7 +156,8 @@ public class DocHistoryService {
                 change,
                 null,
                 null,
-                version
+                version,
+                snapshot
         ));
     }
 

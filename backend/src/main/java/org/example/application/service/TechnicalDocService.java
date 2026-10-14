@@ -69,7 +69,8 @@ public class TechnicalDocService {
                 DocumentType.TECHNICAL_DOC,
                 savedTechnicalDoc.id(),
                 savedTechnicalDoc.title(),
-                currentUser
+                currentUser,
+                DocSnapshot.of(savedTechnicalDoc)
         );
 
         documentEmbeddingService.generateEmbeddingsForTechnicalDoc(
@@ -105,7 +106,8 @@ public class TechnicalDocService {
                 DocumentType.TECHNICAL_DOC,
                 id,
                 currentUserService.getCurrentUser(authentication),
-                changedFields(existingDoc, updatedDoc)
+                changedFields(existingDoc, updatedDoc),
+                DocSnapshot.of(savedDoc)
         );
 
         embeddingService.deleteEmbeddingsForTechnicalDoc(id);

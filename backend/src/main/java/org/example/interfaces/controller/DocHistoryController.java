@@ -3,6 +3,7 @@ package org.example.interfaces.controller;
 import org.example.application.service.DocHistoryService;
 import org.example.domain.enums.DocumentType;
 import org.example.domain.model.DocHistoryModel;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,5 +46,13 @@ public class DocHistoryController {
     public List<DocHistoryModel> getProcedureHistory(@PathVariable Long id) {
         return docHistoryService.getHistoryForDocument(
                 DocumentType.PROCEDURE, id);
+    }
+
+    // The document as it was after one history entry (JSON). Same roles as
+    // reading the history: they can already read every document.
+    @GetMapping(value = "/snapshots/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasAnyRole('DEVELOPER', 'SALES', 'MANAGER', 'ADMIN')")
+    public String getSnapshot(@PathVariable Long id) {
+        return docHistoryService.getSnapshot(id);
     }
 }
