@@ -79,11 +79,22 @@ public class TechnicalDocService {
         return savedTechnicalDoc;
     }
 
-    @Transactional
     public TechnicalDocModel updateTechnicalDoc(
             Long id,
             TechnicalDocModel technicalDoc,
             Authentication authentication
+    ) {
+        return updateTechnicalDoc(id, technicalDoc, authentication, null);
+    }
+
+    // restoredFrom: the version put back by this update, or null for a
+    // normal edit (only used to label the history entry)
+    @Transactional
+    public TechnicalDocModel updateTechnicalDoc(
+            Long id,
+            TechnicalDocModel technicalDoc,
+            Authentication authentication,
+            Integer restoredFrom
     ) {
 
         TechnicalDocModel existingDoc = technicalDocGateway.findById(id)
@@ -107,7 +118,8 @@ public class TechnicalDocService {
                 id,
                 currentUserService.getCurrentUser(authentication),
                 changedFields(existingDoc, updatedDoc),
-                DocSnapshot.of(savedDoc)
+                DocSnapshot.of(savedDoc),
+                restoredFrom
         );
 
         embeddingService.deleteEmbeddingsForTechnicalDoc(id);

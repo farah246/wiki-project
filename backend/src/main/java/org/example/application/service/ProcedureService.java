@@ -80,11 +80,22 @@ public class ProcedureService {
         return savedProcedure;
     }
 
-    @Transactional
     public ProcedureModel updateProcedure(
             Long id,
             ProcedureModel procedure,
             Authentication authentication
+    ) {
+        return updateProcedure(id, procedure, authentication, null);
+    }
+
+    // restoredFrom: the version put back by this update, or null for a
+    // normal edit (only used to label the history entry)
+    @Transactional
+    public ProcedureModel updateProcedure(
+            Long id,
+            ProcedureModel procedure,
+            Authentication authentication,
+            Integer restoredFrom
     ) {
         ProcedureModel existingProcedure =
                 procedureGateway.findById(id)
@@ -109,7 +120,8 @@ public class ProcedureService {
                 id,
                 currentUserService.getCurrentUser(authentication),
                 changedFields(existingProcedure, updatedProcedure),
-                DocSnapshot.of(savedProcedure)
+                DocSnapshot.of(savedProcedure),
+                restoredFrom
         );
 
         embeddingService.deleteEmbeddingsForProcedure(id);

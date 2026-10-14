@@ -28,7 +28,8 @@ public class UserController {
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('DEVELOPER', 'SALES', 'MANAGER', 'ADMIN')")
     public CreateUserResponse getCurrentUser(Authentication authentication) {
-        UserModel user = currentUserService.getCurrentUser(authentication);
+        UserModel user =
+                currentUserService.getCurrentUserWithFreshProfile(authentication);
 
         return userDtoMapper.toResponse(user);
     }

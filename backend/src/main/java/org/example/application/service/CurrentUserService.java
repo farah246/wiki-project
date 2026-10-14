@@ -3,6 +3,8 @@ package org.example.application.service;
 import org.example.domain.enums.UserRole;
 import org.example.domain.model.UserModel;
 import org.example.infrastructure.security.ClerkService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -13,6 +15,9 @@ import java.util.Arrays;
 
 @Service
 public class CurrentUserService {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(CurrentUserService.class);
 
     private static final String ROLE_PREFIX = "ROLE_";
 
@@ -42,6 +47,38 @@ public class CurrentUserService {
                         ? existing
                         : userService.updateRole(existing.id(), role))
                 .orElseGet(() -> createUserFromClerk(clerkUserId, role));
+    }
+
+    // Same as getCurrentUser, and also brings the username up to date with
+    // Clerk. Used where the name is shown (/api/users/me); writes keep
+    // using getCurrentUser and never wait for Clerk.
+    public UserModel getCurrentUserWithFreshProfile(
+            Authentication authentication
+    ) {
+        return refreshUsername(getCurrentUser(authentication));
+    }
+
+    private UserModel refreshUsername(UserModel user) {
+        try {
+            ClerkService.ClerkUserProfile profile =
+                    clerkService.getUser(user.clerkUserId());
+
+            String username = profile.username();
+
+            // no username in Clerk, or nothing changed: keep what we have
+            if (username == null || username.equals(user.username())) {
+                return user;
+            }
+
+            return userService.updateUsername(user.id(), username);
+        } catch (RuntimeException e) {
+            // Clerk unreachable or name already taken by another row:
+            // keep the stored name, the next call will try again
+            log.warn("Could not refresh the username of user {}",
+                    user.id(), e);
+
+            return user;
+        }
     }
 
     // The authorities were built by ClerkJwtAuthenticationConverter, so this

@@ -46,6 +46,18 @@ public class UserRepositoryGateway implements UserGateway {
         return userMapper.toDomain(userRepository.save(userEntity));
     }
 
+    // Same as updateRole: only the username of an existing row changes
+    @Override
+    public UserModel updateUsername(Long id, String username) {
+        User userEntity = userRepository.findById(id)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("User not found: " + id));
+
+        userEntity.setUsername(username);
+
+        return userMapper.toDomain(userRepository.save(userEntity));
+    }
+
     @Override
     public List<UserModel> findAll() {
         return userRepository.findAll()

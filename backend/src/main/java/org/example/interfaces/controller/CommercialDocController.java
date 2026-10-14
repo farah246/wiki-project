@@ -48,9 +48,16 @@ public class CommercialDocController {
     public CommercialDocModel updateDoc(
             @PathVariable Long id,
             @Valid @RequestBody CommercialDocRequest request,
+            // set by "restore this version": only changes the history label
+            @RequestParam(required = false) Integer restoredFrom,
             Authentication authentication
     ) {
-        return commercialDocService.updateDoc(id, toModel(request), authentication);
+        return commercialDocService.updateDoc(
+                id,
+                toModel(request),
+                authentication,
+                restoredFrom
+        );
     }
 
     @DeleteMapping("/{id}")

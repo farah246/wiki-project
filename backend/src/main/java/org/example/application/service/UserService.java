@@ -32,6 +32,10 @@ public class UserService {
         return userGateway.updateRole(id, role);
     }
 
+    public UserModel updateUsername(Long id, String username) {
+        return userGateway.updateUsername(id, username);
+    }
+
     public void deleteUser(Long id) {
         userGateway.deleteById(id);
     }

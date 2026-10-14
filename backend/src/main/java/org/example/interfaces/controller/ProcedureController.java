@@ -52,12 +52,15 @@ public class ProcedureController {
     public ProcedureModel update(
             @PathVariable Long id,
             @Valid @RequestBody ProcedureRequest request,
+            // set by "restore this version": only changes the history label
+            @RequestParam(required = false) Integer restoredFrom,
             Authentication authentication
     ) {
         return procedureService.updateProcedure(
                 id,
                 toModel(request),
-                authentication
+                authentication,
+                restoredFrom
         );
     }
 

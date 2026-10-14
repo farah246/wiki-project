@@ -38,7 +38,7 @@ export async function loadVersion(historyId: number): Promise<LoadVersionResult>
 
 // Puts a saved version back as the current document. It goes through the
 // normal update endpoint, so the same roles apply and the restoration is
-// recorded in the history as a new version.
+// recorded in the history as a new version, labelled "Restored from vN".
 export async function restoreVersion(
     kind: DocKind,
     docId: number,
@@ -72,7 +72,14 @@ export async function restoreVersion(
             config.fields.map(({ key }) => [key, fields[key] ?? null])
         )
 
-        await serverApi.put(`${config.api}/${docId}`, body)
+        // restoredFrom only changes the label of the new history entry
+        // ("Restored from v1"); entries without a version number are
+        // recorded as a normal edit.
+        const restoredFrom = entry.docVersion
+            ? `?restoredFrom=${entry.docVersion}`
+            : ""
+
+        await serverApi.put(`${config.api}/${docId}${restoredFrom}`, body)
     } catch (error) {
         return {
             error:

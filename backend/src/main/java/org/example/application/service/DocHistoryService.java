@@ -91,6 +91,21 @@ public class DocHistoryService {
             List<String> changedFields,
             String snapshot
     ) {
+        recordUpdated(type, docId, user, changedFields, snapshot, null);
+    }
+
+    // restoredFrom: the version the author put back, or null for a normal
+    // edit. A restoration is still recorded as a new version (history is
+    // never rewritten), but it is labelled "Restored from vN" instead of
+    // "Changed: ...".
+    public void recordUpdated(
+            DocumentType type,
+            Long docId,
+            UserModel user,
+            List<String> changedFields,
+            String snapshot,
+            Integer restoredFrom
+    ) {
         if (changedFields.isEmpty()) {
             return;
         }
@@ -101,6 +116,12 @@ public class DocHistoryService {
         // counts as version 1.
         int latest = docHistoryGateway.latestVersionByDocument(type, docId);
         int version = Math.max(latest, 1) + 1;
+
+        if (isRestoration(type, docId, restoredFrom)) {
+            record(type, docId, user, "RESTORED",
+                    "Restored from v" + restoredFrom, version, snapshot);
+            return;
+        }
 
         record(type, docId, user, "UPDATED",
                 "Changed: " + String.join(", ", changedFields), version,
@@ -159,6 +180,22 @@ public class DocHistoryService {
                 version,
                 snapshot
         ));
+    }
+
+    // The label is only used when the version really belongs to this
+    // document: the number comes from the client, so it is never trusted
+    // alone. Otherwise the entry is recorded as a normal edit.
+    private boolean isRestoration(
+            DocumentType type,
+            Long docId,
+            Integer restoredFrom
+    ) {
+        if (restoredFrom == null || restoredFrom < 1) {
+            return false;
+        }
+
+        return docHistoryGateway.findByDocument(type, docId).stream()
+                .anyMatch(entry -> restoredFrom.equals(entry.docVersion()));
     }
 
     private String label(DocumentType type) {

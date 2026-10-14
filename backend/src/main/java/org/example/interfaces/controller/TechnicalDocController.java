@@ -51,12 +51,15 @@ public class TechnicalDocController {
     public TechnicalDocModel update(
             @PathVariable Long id,
             @Valid @RequestBody TechnicalDocRequest request,
+            // set by "restore this version": only changes the history label
+            @RequestParam(required = false) Integer restoredFrom,
             Authentication authentication
     ) {
         return technicalDocService.updateTechnicalDoc(
                 id,
                 toModel(request),
-                authentication
+                authentication,
+                restoredFrom
         );
     }
 

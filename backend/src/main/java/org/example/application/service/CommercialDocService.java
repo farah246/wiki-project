@@ -80,11 +80,22 @@ public class CommercialDocService {
         return savedCommercialDoc;
     }
 
-    @Transactional
     public CommercialDocModel updateDoc(
             Long id,
             CommercialDocModel doc,
             Authentication authentication
+    ) {
+        return updateDoc(id, doc, authentication, null);
+    }
+
+    // restoredFrom: the version put back by this update, or null for a
+    // normal edit (only used to label the history entry)
+    @Transactional
+    public CommercialDocModel updateDoc(
+            Long id,
+            CommercialDocModel doc,
+            Authentication authentication,
+            Integer restoredFrom
     ) {
         CommercialDocModel existingDoc =
                 commercialDocGateway.findById(id)
@@ -109,7 +120,8 @@ public class CommercialDocService {
                 id,
                 currentUserService.getCurrentUser(authentication),
                 changedFields(existingDoc, updatedDoc),
-                DocSnapshot.of(savedDoc)
+                DocSnapshot.of(savedDoc),
+                restoredFrom
         );
 
         embeddingService.deleteEmbeddingsForCommercialDoc(id);

@@ -216,4 +216,74 @@ class DocHistoryServiceTest {
 
         assertThrows(NotFoundException.class, () -> service.getSnapshot(99L));
     }
+
+    // ---- restoring a version ----
+
+    private DocHistoryModel versionRow(int version) {
+        return new DocHistoryModel(
+                version * 10L, 10L, null, null, user,
+                "UPDATED", "Changed: title", null, null, version, SNAPSHOT);
+    }
+
+    @Test
+    void recordUpdated_restoredFromAnExistingVersion_isLabelledAsARestoration() {
+        when(gateway.latestVersionByDocument(DocumentType.TECHNICAL_DOC, 10L))
+                .thenReturn(3);
+        when(gateway.findByDocument(DocumentType.TECHNICAL_DOC, 10L))
+                .thenReturn(List.of(versionRow(3), versionRow(2), versionRow(1)));
+
+        service.recordUpdated(
+                DocumentType.TECHNICAL_DOC, 10L, user,
+                List.of("title", "content"), SNAPSHOT, 1);
+
+        DocHistoryModel row = savedRow();
+        assertEquals("RESTORED", row.action());
+        assertEquals("Restored from v1", row.change());
+        // still a new version: history is never rewritten
+        assertEquals(4, row.docVersion());
+        assertEquals(SNAPSHOT, row.snapshot());
+        assertEquals(10L, row.technicalDocId());
+    }
+
+    @Test
+    void recordUpdated_restoredFromAVersionOfAnotherDocument_isRecordedAsANormalEdit() {
+        when(gateway.latestVersionByDocument(DocumentType.TECHNICAL_DOC, 10L))
+                .thenReturn(2);
+        when(gateway.findByDocument(DocumentType.TECHNICAL_DOC, 10L))
+                .thenReturn(List.of(versionRow(2), versionRow(1)));
+
+        service.recordUpdated(
+                DocumentType.TECHNICAL_DOC, 10L, user,
+                List.of("title"), SNAPSHOT, 99);
+
+        DocHistoryModel row = savedRow();
+        assertEquals("UPDATED", row.action());
+        assertEquals("Changed: title", row.change());
+        assertEquals(3, row.docVersion());
+    }
+
+    @Test
+    void recordUpdated_withoutRestoredFrom_keepsTheNormalLabel() {
+        when(gateway.latestVersionByDocument(DocumentType.TECHNICAL_DOC, 10L))
+                .thenReturn(1);
+
+        service.recordUpdated(
+                DocumentType.TECHNICAL_DOC, 10L, user,
+                List.of("content"), SNAPSHOT, null);
+
+        DocHistoryModel row = savedRow();
+        assertEquals("UPDATED", row.action());
+        assertEquals("Changed: content", row.change());
+        verify(gateway, never()).findByDocument(any(), any());
+    }
+
+    @Test
+    void recordUpdated_restoredFromButNothingChanged_savesNothing() {
+        // restoring the version that is already current changes nothing
+        service.recordUpdated(
+                DocumentType.TECHNICAL_DOC, 10L, user,
+                List.of(), SNAPSHOT, 1);
+
+        verifyNoInteractions(gateway);
+    }
 }

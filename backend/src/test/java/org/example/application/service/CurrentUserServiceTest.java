@@ -113,4 +113,100 @@ class CurrentUserServiceTest {
                 currentUserService.getCurrentUser(
                         authenticationWith("ROLE_MODERATOR")));
     }
+
+    // ---- username kept in sync with Clerk ----
+
+    private ClerkService.ClerkUserProfile clerkProfile(String username) {
+        return new ClerkService.ClerkUserProfile(
+                "user_1", username, "farah@example.com");
+    }
+
+    @Test
+    void freshProfile_usernameChangedInClerk_isUpdatedInTheDatabase() {
+        UserModel existing = userWithRole("ADMIN");
+        UserModel renamed = new UserModel(
+                1L, "user_1", "farah-panda", "farah@example.com",
+                "ADMIN", null, null);
+        when(userService.getByClerkUserId("user_1"))
+                .thenReturn(Optional.of(existing));
+        when(clerkService.getUser("user_1"))
+                .thenReturn(clerkProfile("farah-panda"));
+        when(userService.updateUsername(1L, "farah-panda"))
+                .thenReturn(renamed);
+
+        UserModel result = currentUserService.getCurrentUserWithFreshProfile(
+                authenticationWith("ROLE_ADMIN"));
+
+        assertSame(renamed, result);
+    }
+
+    @Test
+    void freshProfile_sameUsername_changesNothing() {
+        UserModel existing = userWithRole("ADMIN");
+        when(userService.getByClerkUserId("user_1"))
+                .thenReturn(Optional.of(existing));
+        when(clerkService.getUser("user_1")).thenReturn(clerkProfile("farah"));
+
+        UserModel result = currentUserService.getCurrentUserWithFreshProfile(
+                authenticationWith("ROLE_ADMIN"));
+
+        assertSame(existing, result);
+        verify(userService, never()).updateUsername(any(), any());
+    }
+
+    // Replaces the old "only once per interval" test: there is no timer
+    // anymore, so Clerk is asked on every call and a rename shows up on the
+    // very next one.
+    @Test
+    void freshProfile_asksClerkOnEveryCall_soARenameShowsUpImmediately() {
+        UserModel existing = userWithRole("ADMIN");
+        UserModel renamed = new UserModel(
+                1L, "user_1", "farah-panda", "farah@example.com",
+                "ADMIN", null, null);
+        when(userService.getByClerkUserId("user_1"))
+                .thenReturn(Optional.of(existing));
+        when(clerkService.getUser("user_1"))
+                .thenReturn(clerkProfile("farah"))
+                .thenReturn(clerkProfile("farah-panda"));
+        when(userService.updateUsername(1L, "farah-panda"))
+                .thenReturn(renamed);
+
+        UserModel first = currentUserService.getCurrentUserWithFreshProfile(
+                authenticationWith("ROLE_ADMIN"));
+        UserModel second = currentUserService.getCurrentUserWithFreshProfile(
+                authenticationWith("ROLE_ADMIN"));
+
+        assertSame(existing, first);
+        assertSame(renamed, second);
+        verify(clerkService, times(2)).getUser("user_1");
+    }
+
+    @Test
+    void freshProfile_clerkUnavailable_keepsTheStoredUsername() {
+        UserModel existing = userWithRole("ADMIN");
+        when(userService.getByClerkUserId("user_1"))
+                .thenReturn(Optional.of(existing));
+        when(clerkService.getUser("user_1"))
+                .thenThrow(new RuntimeException("Clerk is down"));
+
+        UserModel result = currentUserService.getCurrentUserWithFreshProfile(
+                authenticationWith("ROLE_ADMIN"));
+
+        assertSame(existing, result);
+        verify(userService, never()).updateUsername(any(), any());
+    }
+
+    @Test
+    void freshProfile_noUsernameInClerk_keepsTheStoredUsername() {
+        UserModel existing = userWithRole("ADMIN");
+        when(userService.getByClerkUserId("user_1"))
+                .thenReturn(Optional.of(existing));
+        when(clerkService.getUser("user_1")).thenReturn(clerkProfile(null));
+
+        UserModel result = currentUserService.getCurrentUserWithFreshProfile(
+                authenticationWith("ROLE_ADMIN"));
+
+        assertSame(existing, result);
+        verify(userService, never()).updateUsername(any(), any());
+    }
 }
