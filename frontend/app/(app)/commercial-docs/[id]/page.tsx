@@ -1,14 +1,12 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft, Pencil } from "lucide-react"
-
 import { getCommercialDoc } from "@/lib/api/commercial-doc"
 import { getCommercialDocHistory } from "@/lib/api/doc-history"
 import { DocHistory } from "@/components/documents/doc-history"
 import { canEditCommercialDocs } from "@/lib/auth/roles"
 import { getCurrentRole } from "@/lib/auth/get-role"
-import Markdown from "react-markdown";
-
+import { MarkdownContent } from "@/components/documents/markdown-content"
 type CommercialDocPageProps = {
     params: Promise<{
         id: string
@@ -80,7 +78,7 @@ export default async function CommercialDocPage({
                     </div>
 
                     <div className="px-6 py-6">
-                           <Markdown>{document.proposalText}</Markdown>
+                           <MarkdownContent>{document.proposalText}</MarkdownContent>
                     </div>
                 </article>
 

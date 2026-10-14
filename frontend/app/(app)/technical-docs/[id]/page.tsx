@@ -1,22 +1,37 @@
 import Link from "next/link"
-import { ArrowLeft, Code2, Edit, FileText, GitBranch } from "lucide-react"
+import { Code2, Edit, FileText, GitBranch } from "lucide-react"
 
 import { getTechnicalDoc } from "@/lib/api/technical-doc"
 import { getTechnicalDocHistory } from "@/lib/api/doc-history"
+import { CodeBlock } from "@/components/documents/code-block"
 import { DocHistory } from "@/components/documents/doc-history"
+import { HighlightText } from "@/components/documents/highlight-text"
+import { MarkdownContent } from "@/components/documents/markdown-content"
+import { ScrollToFirstMatch } from "@/components/documents/scroll-to-match"
+import { PageHeader } from "@/components/ui/page-header"
 import { canEditTechnicalDocs } from "@/lib/auth/roles"
 import { getCurrentRole } from "@/lib/auth/get-role"
-import { MarkdownContent } from "@/components/documents/markdown-content"
+import { formatByline } from "@/lib/format"
+import { parseHighlightQuery } from "@/lib/highlight"
+
 type TechnicalDocPageProps = {
     params: Promise<{
         id: string
+    }>
+    // ?q=words: highlighted in the page, the first match is scrolled into view
+    searchParams: Promise<{
+        q?: string | string[]
     }>
 }
 
 export default async function TechnicalDocPage({
                                                    params,
+                                                   searchParams,
                                                }: TechnicalDocPageProps) {
     const { id } = await params
+    const { q } = await searchParams
+
+    const terms = parseHighlightQuery(q)
 
     const role = await getCurrentRole()
 
@@ -28,46 +43,28 @@ export default async function TechnicalDocPage({
     return (
         <div className="min-h-full">
             <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8 lg:py-10">
-
-                {/* Back */}
-                <Link
-                    href="/technical-docs"
-                    className="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
-                >
-                    <ArrowLeft className="h-4 w-4" />
-                    Back to technical documents
-                </Link>
-
-                {/* Header */}
-                <div className="mt-8 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-2 text-sm font-medium text-violet-600">
-                            <FileText className="h-4 w-4" />
-                            <span>Technical document</span>
-                        </div>
-
-                        <h1 className="mt-3 text-3xl font-semibold tracking-tight">
-                            {technicalDoc.title}
-                        </h1>
-
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            Last updated{" "}
-                            {new Date(
-                                technicalDoc.updatedAt
-                            ).toLocaleDateString()}
-                        </p>
-                    </div>
-
-                    {canEdit && (
-                        <Link
-                            href={`/technical-docs/${technicalDoc.id}/edit`}
-                            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition hover:bg-muted"
-                        >
-                            <Edit className="h-4 w-4" />
-                            Edit
-                        </Link>
+                <PageHeader
+                    backHref="/technical-docs"
+                    backLabel="Back to technical documents"
+                    eyebrow="Technical document"
+                    icon={FileText}
+                    title={technicalDoc.title}
+                    meta={formatByline(
+                        technicalDoc.user?.username,
+                        technicalDoc.updatedAt
                     )}
-                </div>
+                    actions={
+                        canEdit && (
+                            <Link
+                                href={`/technical-docs/${technicalDoc.id}/edit`}
+                                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition hover:bg-muted"
+                            >
+                                <Edit className="h-4 w-4" />
+                                Edit
+                            </Link>
+                        )
+                    }
+                />
 
                 {/* Content */}
                 <div className="mt-8 space-y-6">
@@ -81,7 +78,9 @@ export default async function TechnicalDocPage({
                         </div>
 
                         <div className="px-6 py-6">
-                            <MarkdownContent>{technicalDoc.content}</MarkdownContent>
+                            <MarkdownContent highlight={terms}>
+                                {technicalDoc.content}
+                            </MarkdownContent>
                         </div>
                     </section>
 
@@ -95,9 +94,16 @@ export default async function TechnicalDocPage({
                                 </h2>
                             </div>
 
-                            <pre className="overflow-x-auto bg-muted/40 px-6 py-6 text-sm leading-6">
-                                <code>{technicalDoc.codeSnippet}</code>
-                            </pre>
+                            <CodeBlock text={technicalDoc.codeSnippet}>
+                                <pre className="overflow-x-auto bg-muted/40 py-6 pl-6 pr-20 text-sm leading-6">
+                                    <code>
+                                        <HighlightText
+                                            text={technicalDoc.codeSnippet}
+                                            terms={terms}
+                                        />
+                                    </code>
+                                </pre>
+                            </CodeBlock>
                         </section>
                     )}
 
@@ -113,7 +119,10 @@ export default async function TechnicalDocPage({
 
                             <div className="px-6 py-5">
                                 <code className="rounded-md bg-muted px-3 py-2 text-sm">
-                                    {technicalDoc.gitRef}
+                                    <HighlightText
+                                        text={technicalDoc.gitRef}
+                                        terms={terms}
+                                    />
                                 </code>
                             </div>
                         </section>
@@ -122,6 +131,8 @@ export default async function TechnicalDocPage({
                     <DocHistory entries={history} />
                 </div>
             </div>
+
+            {terms.length > 0 && <ScrollToFirstMatch terms={terms} />}
         </div>
     )
 }

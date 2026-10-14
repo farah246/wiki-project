@@ -3,6 +3,7 @@ import { Plus } from "lucide-react"
 
 import { getTechnicalDocs } from "@/lib/api/technical-doc"
 import { TechnicalDocList } from "@/components/technical-docs/technical-doc-list"
+import { PageHeader } from "@/components/ui/page-header"
 import { canCreateTechnicalDocs } from "@/lib/auth/roles"
 import { getCurrentRole } from "@/lib/auth/get-role"
 
@@ -16,27 +17,21 @@ export default async function TechnicalDocsPage() {
     return (
         <div className="min-h-full">
             <div className="mx-auto max-w-6xl px-6 py-8 lg:px-8 lg:py-10">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl font-semibold tracking-tight">
-                            Technical documents
-                        </h1>
-
-                        <p className="mt-2 text-muted-foreground">
-                            Browse and manage your team's technical knowledge.
-                        </p>
-                    </div>
-
-                    {canCreate && (
-                        <Link
-                            href="/technical-docs/new"
-                            className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700"
-                        >
-                            <Plus className="h-4 w-4" />
-                            New document
-                        </Link>
-                    )}
-                </div>
+                <PageHeader
+                    title="Technical documents"
+                    description="Browse and manage your team's technical knowledge."
+                    actions={
+                        canCreate && (
+                            <Link
+                                href="/technical-docs/new"
+                                className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700"
+                            >
+                                <Plus className="h-4 w-4" />
+                                New document
+                            </Link>
+                        )
+                    }
+                />
 
                 <div className="mt-8 space-y-6">
                     <TechnicalDocList documents={documents} />

@@ -209,7 +209,8 @@ export function GlobalSearch() {
                         return (
                             <Link
                                 key={`${result.documentType}-${result.documentId}`}
-                                href={`${config.hrefPrefix}/${result.documentId}`}
+                                // ?q= makes the document page highlight the searched words
+                                href={`${config.hrefPrefix}/${result.documentId}?q=${encodeURIComponent(searchQuery)}`}
                                 className="flex items-center gap-4 px-5 py-3.5 transition hover:bg-muted/50"
                             >
                                 <div
