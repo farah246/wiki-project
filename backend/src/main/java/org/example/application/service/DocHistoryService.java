@@ -10,7 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-
+import org.example.domain.model.ActivityPage;
+import java.util.Set;
 @Service
 public class DocHistoryService {
 
@@ -50,7 +51,16 @@ public class DocHistoryService {
                 .orElseThrow(() ->
                         new NotFoundException("No saved version for this entry"));
     }
+    private static final Set<String> ACTIONS =
+            Set.of("CREATED", "UPDATED", "RESTORED", "DELETED");
 
+    // Parameters come from the URL: never trusted as is
+    public ActivityPage getActivity(Long userId, String action, int page, int size) {
+        String filter = action != null && ACTIONS.contains(action) ? action : null;
+
+        return docHistoryGateway.findActivity(
+                userId, filter, Math.max(page, 0), Math.min(Math.max(size, 1), 50));
+    }
     // ---- recording (called by the document services only) ----
 
     public void recordCreated(

@@ -7,7 +7,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 public interface DocHistoryRepository extends JpaRepository<DocHistory, Long> {
 
     List<DocHistory> findByTechnicalDocIdOrderByCreatedAtDescIdDesc(Long id);
@@ -36,4 +38,16 @@ public interface DocHistoryRepository extends JpaRepository<DocHistory, Long> {
     @Modifying(clearAutomatically = true)
     @Query("update DocHistory h set h.procedure = null where h.procedure.id = :id")
     void detachProcedure(@Param("id") Long id);
+
+    @EntityGraph(attributePaths = {"user", "technicalDoc", "commercialDoc", "procedure"})
+    Page<DocHistory> findAllBy(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"user", "technicalDoc", "commercialDoc", "procedure"})
+    Page<DocHistory> findByAction(String action, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"user", "technicalDoc", "commercialDoc", "procedure"})
+    Page<DocHistory> findByUserId(Long userId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"user", "technicalDoc", "commercialDoc", "procedure"})
+    Page<DocHistory> findByUserIdAndAction(Long userId, String action, Pageable pageable);
 }

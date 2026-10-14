@@ -5,7 +5,7 @@ import org.example.domain.model.DocHistoryModel;
 
 import java.util.List;
 import java.util.Optional;
-
+import org.example.domain.model.ActivityPage;
 public interface DocHistoryGateway {
 
     List<DocHistoryModel> findAll();
@@ -25,4 +25,7 @@ public interface DocHistoryGateway {
     // Unlinks the history rows from a document that is about to be deleted,
     // so the audit rows survive the deletion
     void detachDocument(DocumentType type, Long docId);
+    // userId null = everyone's activity; action null = all actions
+    ActivityPage findActivity(Long userId, String action, int page, int size);
+
 }

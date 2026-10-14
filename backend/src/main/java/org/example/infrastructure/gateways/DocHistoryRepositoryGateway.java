@@ -11,7 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-
+import org.example.domain.model.ActivityPage;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 @Component
 public class DocHistoryRepositoryGateway implements DocHistoryGateway {
 
@@ -96,5 +100,29 @@ public class DocHistoryRepositoryGateway implements DocHistoryGateway {
             case COMMERCIAL_DOC -> docHistoryRepository.detachCommercialDoc(docId);
             case PROCEDURE -> docHistoryRepository.detachProcedure(docId);
         }
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public ActivityPage findActivity(Long userId, String action, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "createdAt", "id"));
+
+        Page<DocHistory> result;
+
+        if (userId == null) {
+            result = action == null
+                    ? docHistoryRepository.findAllBy(pageable)
+                    : docHistoryRepository.findByAction(action, pageable);
+        } else {
+            result = action == null
+                    ? docHistoryRepository.findByUserId(userId, pageable)
+                    : docHistoryRepository.findByUserIdAndAction(userId, action, pageable);
+        }
+
+        return new ActivityPage(
+                result.getContent().stream().map(docHistoryMapper::toActivity).toList(),
+                result.getNumber(),
+                result.getTotalPages(),
+                result.getTotalElements());
     }
 }

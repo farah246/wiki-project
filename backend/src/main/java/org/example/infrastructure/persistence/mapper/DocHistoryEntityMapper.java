@@ -8,7 +8,8 @@ import org.example.infrastructure.persistence.entity.Procedure;
 import org.example.infrastructure.persistence.entity.TechnicalDoc;
 import org.example.infrastructure.persistence.entity.User;
 import org.springframework.stereotype.Component;
-
+import org.example.domain.enums.DocumentType;
+import org.example.domain.model.ActivityEntryModel;
 @Component
 public class DocHistoryEntityMapper {
 
@@ -83,5 +84,33 @@ public class DocHistoryEntityMapper {
                 entityObject.getDocVersion(),
                 entityObject.getSnapshot()
         );
+    }
+    public ActivityEntryModel toActivity(DocHistory h) {
+        DocumentType type = null;
+        Long docId = null;
+        String title = null;
+
+        if (h.getTechnicalDoc() != null) {
+            type = DocumentType.TECHNICAL_DOC;
+            docId = h.getTechnicalDoc().getId();
+            title = h.getTechnicalDoc().getTitle();
+        } else if (h.getCommercialDoc() != null) {
+            type = DocumentType.COMMERCIAL_DOC;
+            docId = h.getCommercialDoc().getId();
+            title = h.getCommercialDoc().getTitle();
+        } else if (h.getProcedure() != null) {
+            type = DocumentType.PROCEDURE;
+            docId = h.getProcedure().getId();
+            title = h.getProcedure().getTitle();
+        }
+
+        User u = h.getUser();
+
+        return new ActivityEntryModel(
+                h.getId(), h.getAction(), h.getChange(), h.getDocVersion(),
+                h.getCreatedAt(),
+                u != null ? u.getUsername() : null,
+                u != null ? u.getEmail() : null,
+                type, docId, title);
     }
 }

@@ -1,10 +1,13 @@
 package org.example.interfaces.controller;
 
+import org.example.application.service.CurrentUserService;
 import org.example.application.service.DocHistoryService;
 import org.example.domain.enums.DocumentType;
+import org.example.domain.model.ActivityPage;
 import org.example.domain.model.DocHistoryModel;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,15 +19,45 @@ import java.util.List;
 public class DocHistoryController {
 
     private final DocHistoryService docHistoryService;
+    private final CurrentUserService currentUserService;
 
-    public DocHistoryController(DocHistoryService docHistoryService) {
+    public DocHistoryController(
+            DocHistoryService docHistoryService,
+            CurrentUserService currentUserService
+    ) {
         this.docHistoryService = docHistoryService;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public List<DocHistoryModel> getAll() {
         return docHistoryService.getAllHistories();
+    }
+
+    // Everyone's activity: admins only
+    @GetMapping("/activity")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ActivityPage getActivity(
+            @RequestParam(required = false) String action,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return docHistoryService.getActivity(null, action, page, size);
+    }
+
+    // The caller's own activity: the user comes from the token, never from the URL
+    @GetMapping("/activity/me")
+    @PreAuthorize("hasAnyRole('DEVELOPER', 'SALES', 'MANAGER', 'ADMIN')")
+    public ActivityPage getMyActivity(
+            Authentication authentication,
+            @RequestParam(required = false) String action,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Long userId = currentUserService.getCurrentUser(authentication).id();
+
+        return docHistoryService.getActivity(userId, action, page, size);
     }
 
     @GetMapping("/technical-docs/{id}")
