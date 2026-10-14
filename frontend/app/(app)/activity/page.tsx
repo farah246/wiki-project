@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server"
 
 import { PageHeader } from "@/components/ui/page-header"
 import { getActivity } from "@/lib/api/activity"
+import { getUsers } from "@/lib/api/users"
 import { normalizeRole } from "@/lib/auth/roles"
 import { formatDateTime } from "@/lib/format"
 import { ACTIVITY_ACTIONS, DOC_PATHS } from "@/lib/types/activity"
@@ -19,7 +20,12 @@ const chip = "rounded-lg border px-3 py-1.5 text-sm transition hover:bg-muted"
 export default async function ActivityPage({
                                                searchParams,
                                            }: {
-    searchParams: Promise<{ page?: string; action?: string; scope?: string }>
+    searchParams: Promise<{
+        page?: string
+        action?: string
+        scope?: string
+        user?: string
+    }>
 }) {
     const { sessionClaims } = await auth()
     const isAdmin = normalizeRole(sessionClaims?.metadata?.role) === "ADMIN"
@@ -30,12 +36,21 @@ export default async function ActivityPage({
     // Only admins can see everyone's activity; everybody else sees their own
     const scope = isAdmin && params.scope !== "me" ? "all" : "me"
 
-    const data = await getActivity(page, action, scope)
+    // The user list is only needed (and only allowed) in the admin "everyone" view
+    const users = scope === "all" ? await getUsers() : []
+    const requestedUser = Number.parseInt(params.user ?? "", 10)
+    // An unknown or tampered id is ignored
+    const userId = users.some((u) => u.id === requestedUser)
+        ? requestedUser
+        : undefined
 
-    const href = (p: number, a?: string) => {
+    const data = await getActivity(page, action, scope, userId)
+
+    const href = (p: number, a?: string, withUser = true) => {
         const query = new URLSearchParams()
         if (a) query.set("action", a)
         if (isAdmin && scope === "me") query.set("scope", "me")
+        if (withUser && userId) query.set("user", String(userId))
         if (p > 0) query.set("page", String(p))
         const text = query.toString()
         return `/activity${text ? `?${text}` : ""}`
@@ -68,6 +83,42 @@ export default async function ActivityPage({
                             Only me
                         </Link>
                     </div>
+                )}
+
+                {/* Filter by user (admins, "Everyone" view only) */}
+                {scope === "all" && (
+                    <form
+                        action="/activity"
+                        className="mt-6 flex flex-wrap items-center gap-2"
+                    >
+                        {action && (
+                            <input type="hidden" name="action" value={action} />
+                        )}
+
+                        <select
+                            name="user"
+                            defaultValue={userId ?? ""}
+                            aria-label="Filter by user"
+                            className="h-10 rounded-lg border bg-background px-3 text-sm outline-none focus:border-violet-400"
+                        >
+                            <option value="">All users</option>
+                            {users.map((u) => (
+                                <option key={u.id} value={u.id}>
+                                    {u.username ?? u.email}
+                                </option>
+                            ))}
+                        </select>
+
+                        <button type="submit" className={chip}>
+                            Filter
+                        </button>
+
+                        {userId && (
+                            <Link href={href(0, action, false)} className={chip}>
+                                Clear
+                            </Link>
+                        )}
+                    </form>
                 )}
 
                 <div className="mt-6 flex flex-wrap gap-2">

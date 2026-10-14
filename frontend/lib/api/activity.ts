@@ -6,10 +6,12 @@ export type ActivityScope = "all" | "me"
 export function getActivity(
     page: number,
     action?: string,
-    scope: ActivityScope = "me"
+    scope: ActivityScope = "me",
+    userId?: number
 ) {
     const params = new URLSearchParams({ page: String(page), size: "20" })
     if (action) params.set("action", action)
+    if (scope === "all" && userId) params.set("userId", String(userId))
 
     const path =
         scope === "all"

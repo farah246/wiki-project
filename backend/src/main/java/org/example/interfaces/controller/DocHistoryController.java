@@ -35,15 +35,16 @@ public class DocHistoryController {
         return docHistoryService.getAllHistories();
     }
 
-    // Everyone's activity: admins only
+    // Everyone's activity: admins only. userId is optional (null = all users)
     @GetMapping("/activity")
     @PreAuthorize("hasRole('ADMIN')")
     public ActivityPage getActivity(
+            @RequestParam(required = false) Long userId,
             @RequestParam(required = false) String action,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return docHistoryService.getActivity(null, action, page, size);
+        return docHistoryService.getActivity(userId, action, page, size);
     }
 
     // The caller's own activity: the user comes from the token, never from the URL
