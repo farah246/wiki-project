@@ -1,10 +1,12 @@
 package org.example.application.service;
 
-import org.example.application.gateway.CommercialDocGateway;
-import org.example.domain.model.CommercialDocModel;
+import org.example.application.event.DocumentIndexRequested;
 import org.example.application.exception.NotFoundException;
+import org.example.application.gateway.CommercialDocGateway;
 import org.example.domain.enums.DocumentType;
+import org.example.domain.model.CommercialDocModel;
 import org.example.domain.model.UserModel;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,22 +20,22 @@ public class CommercialDocService {
 
     private final CommercialDocGateway commercialDocGateway;
     private final EmbeddingService embeddingService;
-    private final DocumentEmbeddingService documentEmbeddingService;
+    private final ApplicationEventPublisher events;
     private final CurrentUserService currentUserService;
     private final DocHistoryService docHistoryService;
-
     private final FavoriteService favoriteService;
+
     public CommercialDocService(
             CommercialDocGateway commercialDocGateway,
             EmbeddingService embeddingService,
-            DocumentEmbeddingService documentEmbeddingService,
+            ApplicationEventPublisher events,
             CurrentUserService currentUserService,
             DocHistoryService docHistoryService,
             FavoriteService favoriteService
     ) {
         this.commercialDocGateway = commercialDocGateway;
         this.embeddingService = embeddingService;
-        this.documentEmbeddingService = documentEmbeddingService;
+        this.events = events;
         this.currentUserService = currentUserService;
         this.docHistoryService = docHistoryService;
         this.favoriteService = favoriteService;
@@ -47,6 +49,7 @@ public class CommercialDocService {
         return commercialDocGateway.findById(id);
     }
 
+    @Transactional
     public CommercialDocModel saveDoc(
             CommercialDocModel doc,
             Authentication authentication
@@ -75,14 +78,17 @@ public class CommercialDocService {
                 DocSnapshot.of(savedCommercialDoc)
         );
 
-        documentEmbeddingService.generateEmbeddingsForCommercialDoc(
-                savedCommercialDoc.id(),
-                savedCommercialDoc.textForEmbedding()
-        );
+        events.publishEvent(new DocumentIndexRequested(
+                DocumentType.COMMERCIAL_DOC,
+                savedCommercialDoc.id()
+        ));
 
         return savedCommercialDoc;
     }
 
+    // @Transactional here too: this overload calls the 4-arg one from the same
+    // class, which bypasses Spring's proxy
+    @Transactional
     public CommercialDocModel updateDoc(
             Long id,
             CommercialDocModel doc,
@@ -127,12 +133,10 @@ public class CommercialDocService {
                 restoredFrom
         );
 
-        embeddingService.deleteEmbeddingsForCommercialDoc(id);
-
-        documentEmbeddingService.generateEmbeddingsForCommercialDoc(
-                savedDoc.id(),
-                savedDoc.textForEmbedding()
-        );
+        events.publishEvent(new DocumentIndexRequested(
+                DocumentType.COMMERCIAL_DOC,
+                savedDoc.id()
+        ));
 
         return savedDoc;
     }

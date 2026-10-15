@@ -1,10 +1,12 @@
 package org.example.application.service;
 
-import org.example.application.gateway.TechnicalDocGateway;
+import org.example.application.event.DocumentIndexRequested;
 import org.example.application.exception.NotFoundException;
-import org.example.domain.model.TechnicalDocModel;
+import org.example.application.gateway.TechnicalDocGateway;
 import org.example.domain.enums.DocumentType;
+import org.example.domain.model.TechnicalDocModel;
 import org.example.domain.model.UserModel;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,27 +14,28 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
 @Service
 public class TechnicalDocService {
 
     private final TechnicalDocGateway technicalDocGateway;
     private final EmbeddingService embeddingService;
-    private final DocumentEmbeddingService documentEmbeddingService;
+    private final ApplicationEventPublisher events;
     private final CurrentUserService currentUserService;
     private final DocHistoryService docHistoryService;
-    FavoriteService favoriteService;
+    private final FavoriteService favoriteService;
 
     public TechnicalDocService(
             TechnicalDocGateway technicalDocGateway,
-            DocumentEmbeddingService documentEmbeddingService,
             EmbeddingService embeddingService,
+            ApplicationEventPublisher events,
             CurrentUserService currentUserService,
             DocHistoryService docHistoryService,
             FavoriteService favoriteService
     ) {
         this.technicalDocGateway = technicalDocGateway;
-        this.documentEmbeddingService = documentEmbeddingService;
         this.embeddingService = embeddingService;
+        this.events = events;
         this.currentUserService = currentUserService;
         this.docHistoryService = docHistoryService;
         this.favoriteService = favoriteService;
@@ -46,6 +49,7 @@ public class TechnicalDocService {
         return technicalDocGateway.findById(id);
     }
 
+    @Transactional
     public TechnicalDocModel saveTechnicalDoc(
             TechnicalDocModel technicalDoc,
             Authentication authentication
@@ -75,12 +79,17 @@ public class TechnicalDocService {
                 DocSnapshot.of(savedTechnicalDoc)
         );
 
-        documentEmbeddingService.generateEmbeddingsForTechnicalDoc(
-                savedTechnicalDoc.id());
+        events.publishEvent(new DocumentIndexRequested(
+                DocumentType.TECHNICAL_DOC,
+                savedTechnicalDoc.id()
+        ));
 
         return savedTechnicalDoc;
     }
 
+    // @Transactional here too: this overload calls the 4-arg one from the same
+    // class, which bypasses Spring's proxy
+    @Transactional
     public TechnicalDocModel updateTechnicalDoc(
             Long id,
             TechnicalDocModel technicalDoc,
@@ -98,7 +107,6 @@ public class TechnicalDocService {
             Authentication authentication,
             Integer restoredFrom
     ) {
-
         TechnicalDocModel existingDoc = technicalDocGateway.findById(id)
                 .orElseThrow(() -> new NotFoundException("Technical document not found"));
 
@@ -124,14 +132,13 @@ public class TechnicalDocService {
                 restoredFrom
         );
 
-        embeddingService.deleteEmbeddingsForTechnicalDoc(id);
-
-        documentEmbeddingService.generateEmbeddingsForTechnicalDoc(
-                savedDoc.id());
+        events.publishEvent(new DocumentIndexRequested(
+                DocumentType.TECHNICAL_DOC,
+                savedDoc.id()
+        ));
 
         return savedDoc;
     }
-
 
     @Transactional
     public void deleteTechnicalDoc(Long id, Authentication authentication) {

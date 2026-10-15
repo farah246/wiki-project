@@ -1,5 +1,6 @@
 package org.example.application.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.application.exception.EmbeddingUnavailableException;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,32 +9,51 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import java.time.Duration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.springframework.web.client.RestClientException;
+
 @Service
 public class HuggingFaceService {
 
+    private static final int BATCH_SIZE = 32; // TEI's default max client batch size
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestTemplate restTemplate = createRestTemplate();
 
-    private static RestTemplate createRestTemplate() {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(Duration.ofSeconds(2));
-        factory.setReadTimeout(Duration.ofSeconds(15));
-        return new RestTemplate(factory);
-    }
-    // Use a valid model that supports feature extraction via API
     @Value("${embedding.api.url:https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5}")
     private String apiUrl;
 
     @Value("${huggingface.api.token:}")
     private String HF_API_TOKEN;
 
+    @Value("${embedding.api.batch-size:4}")
+    private int batchSize;
+
+    private static RestTemplate createRestTemplate() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(2));
+        factory.setReadTimeout(Duration.ofSeconds(30)); // Increased read timeout to 30 seconds
+        return new RestTemplate(factory);
+    }
+
     public double[] getEmbedding(String inputText) {
+        return callApi(List.of(inputText)).get(0);
+    }
+
+    public List<double[]> getEmbeddings(List<String> inputs) {
+        List<double[]> all = new ArrayList<>();
+        for (int i = 0; i < inputs.size(); i += batchSize) {
+            all.addAll(callApi(inputs.subList(i, Math.min(i + batchSize, inputs.size()))));
+        }
+        return all;
+    }
+
+    private List<double[]> callApi(List<String> batch) {
         HttpHeaders headers = new HttpHeaders();
         if (HF_API_TOKEN != null && !HF_API_TOKEN.isBlank()) {
             headers.set("Authorization", "Bearer " + HF_API_TOKEN);
@@ -42,44 +62,30 @@ public class HuggingFaceService {
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
         try {
-            // Build the request body as a Java object
-            // instead of manually constructing JSON
-            Map<String, Object> requestBody = Map.of(
-                    "inputs", List.of(inputText)
-            );
-
-            // ObjectMapper handles quotes, newlines, backslashes, etc.
-            String jsonBody = objectMapper.writeValueAsString(requestBody);
-
-            HttpEntity<String> request = new HttpEntity<>(jsonBody, headers);
-
+            String jsonBody = objectMapper.writeValueAsString(Map.of("inputs", batch));
             ResponseEntity<String> response =
-                    restTemplate.postForEntity(apiUrl, request, String.class);
+                    restTemplate.postForEntity(apiUrl, new HttpEntity<>(jsonBody, headers), String.class);
 
+            List<List<Double>> result = objectMapper.readValue(
+                    response.getBody(), new TypeReference<List<List<Double>>>() {});
 
-            // Parse the first vector
-            List<List<Double>> result =
-                    objectMapper.readValue(response.getBody(), List.class);
-
-            List<Double> vector = result.get(0);
-
-            // Convert to double[]
-            double[] embedding = new double[vector.size()];
-
-            for (int i = 0; i < vector.size(); i++) {
-                embedding[i] = vector.get(i);
+            if (result.size() != batch.size()) {
+                throw new IllegalStateException(
+                        "Expected " + batch.size() + " vectors, got " + result.size());
             }
 
-            return embedding;
+            List<double[]> vectors = new ArrayList<>(result.size());
+            for (List<Double> v : result) {
+                double[] arr = new double[v.size()];
+                for (int i = 0; i < arr.length; i++) arr[i] = v.get(i);
+                vectors.add(arr);
+            }
+            return vectors;
 
-        }catch (RestClientException e) {                      // new: HTTP errors, 402, timeouts, connection refused
-            throw new EmbeddingUnavailableException(
-                    "Embedding service unavailable: " + e.getMessage(), e
-            );
-        }catch (Exception e) {
-            throw new RuntimeException(
-                    "Embedding extraction failed: " + e.getMessage(), e
-            );
+        } catch (RestClientException e) {
+            throw new EmbeddingUnavailableException("Embedding service unavailable: " + e.getMessage(), e);
+        } catch (Exception e) {
+            throw new RuntimeException("Embedding extraction failed: " + e.getMessage(), e);
         }
     }
 }

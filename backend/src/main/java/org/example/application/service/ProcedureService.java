@@ -1,10 +1,12 @@
 package org.example.application.service;
 
-import org.example.application.gateway.ProcedureGateway;
+import org.example.application.event.DocumentIndexRequested;
 import org.example.application.exception.NotFoundException;
-import org.example.domain.model.ProcedureModel;
+import org.example.application.gateway.ProcedureGateway;
 import org.example.domain.enums.DocumentType;
+import org.example.domain.model.ProcedureModel;
 import org.example.domain.model.UserModel;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,22 +20,22 @@ public class ProcedureService {
 
     private final ProcedureGateway procedureGateway;
     private final EmbeddingService embeddingService;
-    private final DocumentEmbeddingService documentEmbeddingService;
+    private final ApplicationEventPublisher events;
     private final CurrentUserService currentUserService;
     private final DocHistoryService docHistoryService;
-
     private final FavoriteService favoriteService;
+
     public ProcedureService(
             ProcedureGateway procedureGateway,
             EmbeddingService embeddingService,
-            DocumentEmbeddingService documentEmbeddingService,
+            ApplicationEventPublisher events,
             CurrentUserService currentUserService,
             DocHistoryService docHistoryService,
             FavoriteService favoriteService
     ) {
         this.procedureGateway = procedureGateway;
         this.embeddingService = embeddingService;
-        this.documentEmbeddingService = documentEmbeddingService;
+        this.events = events;
         this.currentUserService = currentUserService;
         this.docHistoryService = docHistoryService;
         this.favoriteService = favoriteService;
@@ -47,6 +49,7 @@ public class ProcedureService {
         return procedureGateway.findById(id);
     }
 
+    @Transactional
     public ProcedureModel saveProcedure(
             ProcedureModel procedure,
             Authentication authentication
@@ -75,14 +78,17 @@ public class ProcedureService {
                 DocSnapshot.of(savedProcedure)
         );
 
-        documentEmbeddingService.generateEmbeddingsForProcedure(
-                savedProcedure.id(),
-                savedProcedure.textForEmbedding()
-        );
+        events.publishEvent(new DocumentIndexRequested(
+                DocumentType.PROCEDURE,
+                savedProcedure.id()
+        ));
 
         return savedProcedure;
     }
 
+    // @Transactional here too: this overload calls the 4-arg one from the same
+    // class, which bypasses Spring's proxy
+    @Transactional
     public ProcedureModel updateProcedure(
             Long id,
             ProcedureModel procedure,
@@ -127,12 +133,10 @@ public class ProcedureService {
                 restoredFrom
         );
 
-        embeddingService.deleteEmbeddingsForProcedure(id);
-
-        documentEmbeddingService.generateEmbeddingsForProcedure(
-                savedProcedure.id(),
-                savedProcedure.textForEmbedding()
-        );
+        events.publishEvent(new DocumentIndexRequested(
+                DocumentType.PROCEDURE,
+                savedProcedure.id()
+        ));
 
         return savedProcedure;
     }

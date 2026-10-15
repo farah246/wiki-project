@@ -4,6 +4,7 @@ import org.example.application.gateway.EmbeddingGateway;
 import org.example.domain.model.EmbeddingModel;
 import org.example.domain.model.SimilarEmbeddingModel;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -50,5 +51,22 @@ public class EmbeddingService {
             int limit
     ) {
         return embeddingGateway.findSimilar(queryEmbedding, limit);
+    }
+    @Transactional
+    public void replaceForTechnicalDoc(Long id, List<EmbeddingModel> embeddings) {
+        embeddingGateway.deleteByTechnicalDocId(id);
+        embeddings.forEach(embeddingGateway::save);
+    }
+
+    @Transactional
+    public void replaceForCommercialDoc(Long id, List<EmbeddingModel> embeddings) {
+        embeddingGateway.deleteByCommercialDocId(id);
+        embeddings.forEach(embeddingGateway::save);
+    }
+
+    @Transactional
+    public void replaceForProcedure(Long id, List<EmbeddingModel> embeddings) {
+        embeddingGateway.deleteByProcedureId(id);
+        embeddings.forEach(embeddingGateway::save);
     }
 }

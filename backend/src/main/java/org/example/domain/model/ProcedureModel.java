@@ -14,6 +14,8 @@ public record ProcedureModel(
 
     @Override
     public String textForEmbedding() {
-        return description + "\n\n" + visualModel;
-    }
-}
+        if (visualModel == null || visualModel.isBlank()) {
+            return description;
+        }
+        return description + "\n\n```\n" + visualModel + "\n```";
+    }}

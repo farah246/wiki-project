@@ -15,6 +15,8 @@ public record TechnicalDocModel(
 
     @Override
     public String textForEmbedding() {
-        return content + "\n\n" + codeSnippet;
-    }
-}
+        if (codeSnippet == null || codeSnippet.isBlank()) {
+            return content;
+        }
+        return content + "\n\n```\n" + codeSnippet + "\n```";
+    }}

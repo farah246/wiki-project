@@ -1,10 +1,11 @@
 package org.example.application.service;
 
-import org.example.application.exception.NotFoundException;
-import org.example.application.gateway.TechnicalDocGateway;
-import org.example.domain.model.EmbeddingModel;
+import org.example.domain.model.CommercialDocModel;
+import org.example.domain.model.ProcedureModel;
 import org.example.domain.model.TechnicalDocModel;
+import org.example.domain.model.EmbeddingModel;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,85 +15,33 @@ public class DocumentEmbeddingService {
 
     private final DocumentChunkingService chunkingService;
     private final EmbeddingClientService embeddingClientService;
-    private final TechnicalDocGateway technicalDocGateway;
+    private final EmbeddingService embeddingService;
 
     public DocumentEmbeddingService(
             DocumentChunkingService chunkingService,
             EmbeddingClientService embeddingClientService,
-            TechnicalDocGateway technicalDocGateway
+            EmbeddingService embeddingService
     ) {
         this.chunkingService = chunkingService;
         this.embeddingClientService = embeddingClientService;
-        this.technicalDocGateway = technicalDocGateway;
+        this.embeddingService = embeddingService;
     }
 
-    public List<EmbeddingModel> generateEmbeddingsForTechnicalDoc(Long technicalDocId) {
-
-        TechnicalDocModel technicalDoc = technicalDocGateway.findById(technicalDocId)
-                .orElseThrow(() ->
-                        new NotFoundException("Technical document not found: " + technicalDocId));
-
-        String text = technicalDoc.textForEmbedding();
-
-        List<String> chunks = chunkingService.chunkText(text);
-        List<EmbeddingModel> embeddings = new ArrayList<>();
-
-        for (int i = 0; i < chunks.size(); i++) {
-            EmbeddingModel embedding = embeddingClientService.generateAndSaveEmbedding(
-                    technicalDocId,
-                    null,
-                    null,
-                    i,
-                    chunks.get(i)
-            );
-
-            embeddings.add(embedding);
-        }
-
-        return embeddings;
+    public void reindexTechnicalDoc(TechnicalDocModel doc) {
+        List<String> chunks = chunkingService.chunkMarkdown(doc.title(), doc.textForEmbedding());
+        embeddingService.replaceForTechnicalDoc(doc.id(),
+                embeddingClientService.buildEmbeddings(doc.id(), null, null, chunks));
     }
 
-    public List<EmbeddingModel> generateEmbeddingsForCommercialDoc(
-            Long commercialDocId,
-            String text
-    ) {
-        List<String> chunks = chunkingService.chunkText(text);
-        List<EmbeddingModel> embeddings = new ArrayList<>();
-
-        for (int i = 0; i < chunks.size(); i++) {
-            EmbeddingModel embedding = embeddingClientService.generateAndSaveEmbedding(
-                    null,
-                    commercialDocId,
-                    null,
-                    i,
-                    chunks.get(i)
-            );
-
-            embeddings.add(embedding);
-        }
-
-        return embeddings;
+    public void reindexCommercialDoc(CommercialDocModel doc) {
+        List<String> chunks = chunkingService.chunkMarkdown(doc.title(), doc.textForEmbedding());
+        embeddingService.replaceForCommercialDoc(doc.id(),
+                embeddingClientService.buildEmbeddings(null, doc.id(), null, chunks));
     }
 
-    public List<EmbeddingModel> generateEmbeddingsForProcedure(
-            Long procedureId,
-            String text
-    ) {
-        List<String> chunks = chunkingService.chunkText(text);
-        List<EmbeddingModel> embeddings = new ArrayList<>();
-
-        for (int i = 0; i < chunks.size(); i++) {
-            EmbeddingModel embedding = embeddingClientService.generateAndSaveEmbedding(
-                    null,
-                    null,
-                    procedureId,
-                    i,
-                    chunks.get(i)
-            );
-
-            embeddings.add(embedding);
-        }
-
-        return embeddings;
+    public void reindexProcedure(ProcedureModel procedure) {
+        List<String> chunks = chunkingService.chunkMarkdown(procedure.title(), procedure.textForEmbedding());
+        embeddingService.replaceForProcedure(procedure.id(),
+                embeddingClientService.buildEmbeddings(null, null, procedure.id(), chunks));
     }
 }
