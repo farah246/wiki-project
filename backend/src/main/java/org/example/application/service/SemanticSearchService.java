@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -63,6 +64,19 @@ public class SemanticSearchService {
                         ).reversed()
                 )
                 .limit(limit)
+                .toList();
+    }
+
+    // For RAG: the best CHUNKS, best first. Unlike search(), several chunks of the
+    // same document are kept (the answer may need two sections of one page).
+    public List<SearchResultModel> retrieveChunks(String query, int limit) {
+
+        float[] queryEmbedding =
+                embeddingClientService.generateQueryEmbedding(query);
+
+        return embeddingService.findSimilar(queryEmbedding, limit).stream()
+                .map(this::mapToSearchResult)
+                .filter(Objects::nonNull)
                 .toList();
     }
 

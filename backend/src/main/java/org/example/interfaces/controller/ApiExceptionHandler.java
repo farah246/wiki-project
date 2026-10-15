@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.example.application.exception.LlmUnavailableException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -50,5 +51,15 @@ public class ApiExceptionHandler {
                         "error", "validation_failed",
                         "message", "Some fields are invalid.",
                         "fields", fields));
+    }
+
+    @ExceptionHandler(LlmUnavailableException.class)
+    public ResponseEntity<Map<String, String>> handleLlmUnavailable(
+            LlmUnavailableException ex) {
+        log.error("LLM unavailable", ex);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of(
+                        "error", "ask_unavailable",
+                        "message", "The assistant is temporarily unavailable. Please try again later."));
     }
 }
