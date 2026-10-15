@@ -6,14 +6,18 @@ import { TechnicalDocList } from "@/components/technical-docs/technical-doc-list
 import { PageHeader } from "@/components/ui/page-header"
 import { canCreateTechnicalDocs } from "@/lib/auth/roles"
 import { getCurrentRole } from "@/lib/auth/get-role"
+import { getFavorites } from "@/lib/api/favorites"
+import { favoriteIdsOf } from "@/lib/favorites"
 
 export default async function TechnicalDocsPage() {
     const role = await getCurrentRole()
 
     const canCreate = canCreateTechnicalDocs(role)
 
-    const documents = await getTechnicalDocs()
-
+    const [documents, favorites] = await Promise.all([
+        getTechnicalDocs(),
+        getFavorites(),
+    ])
     return (
         <div className="min-h-full">
             <div className="mx-auto max-w-6xl px-6 py-8 lg:px-8 lg:py-10">
@@ -34,7 +38,10 @@ export default async function TechnicalDocsPage() {
                 />
 
                 <div className="mt-8 space-y-6">
-                    <TechnicalDocList documents={documents} />
+                    <TechnicalDocList
+                        documents={documents}
+                        favoriteIds={favoriteIdsOf(favorites,"TECHNICAL_DOC")}
+                    />
                 </div>
             </div>
         </div>

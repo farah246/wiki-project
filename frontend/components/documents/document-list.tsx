@@ -28,7 +28,8 @@ import {
     type ListView,
     type SortKey,
 } from "@/lib/list-view"
-
+import { FavoriteButton } from "@/components/documents/favorite-button"
+import type { FavoriteDocType } from "@/lib/types/favorite"
 // Shared list for every document type. The type-specific lists
 // (technical docs, commercial docs, procedures) only describe what differs:
 // the base path, the texts, which fields to show and which to search.
@@ -58,6 +59,8 @@ type DocumentListProps<T extends ListItem> = {
     canEdit: boolean
     canDelete: boolean
     onDelete: (id: number) => Promise<void>
+    favorite?: { docType: FavoriteDocType; ids: number[] }
+
 }
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
@@ -107,8 +110,10 @@ export function DocumentList<T extends ListItem>({
                                                      canEdit,
                                                      canDelete,
                                                      onDelete,
+                                                     favorite,
                                                  }: DocumentListProps<T>) {
     const pathname = usePathname()
+    const favoriteIds = new Set(favorite?.ids ?? [])
     const searchParams = useSearchParams()
 
     // What the address bar says right now (only our own parameters, normalised)
@@ -324,8 +329,17 @@ export function DocumentList<T extends ListItem>({
                                                 )}
                                             </div>
 
-                                            <Icon className="h-5 w-5 shrink-0 text-violet-600" />
-                                        </div>
+                                            <div className="flex shrink-0 items-center gap-3">
+                                                {favorite && (
+                                                    <FavoriteButton
+                                                        docType={favorite.docType}
+                                                        docId={item.id}
+                                                        isFavorite={favoriteIds.has(item.id)}
+                                                    />
+                                                )}
+
+                                                <Icon className="h-5 w-5 text-violet-600" />
+                                            </div>                                        </div>
 
                                         {(canEdit || canDelete) && (
                                             <div className="mt-5 flex items-center gap-2">

@@ -13,6 +13,9 @@ import { canEditTechnicalDocs } from "@/lib/auth/roles"
 import { getCurrentRole } from "@/lib/auth/get-role"
 import { formatByline } from "@/lib/format"
 import { parseHighlightQuery } from "@/lib/highlight"
+import { FavoriteButton } from "@/components/documents/favorite-button"
+import { getFavorites } from "@/lib/api/favorites"
+import { isFavorite } from "@/lib/favorites"
 
 type TechnicalDocPageProps = {
     params: Promise<{
@@ -38,7 +41,11 @@ export default async function TechnicalDocPage({
     const canEdit = canEditTechnicalDocs(role)
 
     const technicalDoc = await getTechnicalDoc(Number(id))
-    const history = await getTechnicalDocHistory(Number(id))
+
+    const [history, favorites] = await Promise.all([
+        getTechnicalDocHistory(Number(id)),
+        getFavorites(),
+    ])
 
     return (
         <div className="min-h-full">
@@ -54,15 +61,24 @@ export default async function TechnicalDocPage({
                         technicalDoc.updatedAt
                     )}
                     actions={
-                        canEdit && (
-                            <Link
-                                href={`/technical-docs/${technicalDoc.id}/edit`}
-                                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition hover:bg-muted"
-                            >
-                                <Edit className="h-4 w-4" />
-                                Edit
-                            </Link>
-                        )
+                        <>
+                            <FavoriteButton
+                                variant="labeled"
+                                docType="TECHNICAL_DOC"
+                                docId={technicalDoc.id}
+                                isFavorite={isFavorite(favorites, "TECHNICAL_DOC", technicalDoc.id)}
+                            />
+
+                            {canEdit && (
+                                <Link
+                                    href={`/technical-docs/${technicalDoc.id}/edit`}
+                                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition hover:bg-muted"
+                                >
+                                    <Edit className="h-4 w-4" />
+                                    Edit
+                                </Link>
+                            )}
+                        </>
                     }
                 />
 

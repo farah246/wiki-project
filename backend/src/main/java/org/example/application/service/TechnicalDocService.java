@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
 @Service
 public class TechnicalDocService {
 
@@ -21,19 +20,22 @@ public class TechnicalDocService {
     private final DocumentEmbeddingService documentEmbeddingService;
     private final CurrentUserService currentUserService;
     private final DocHistoryService docHistoryService;
+    FavoriteService favoriteService;
 
     public TechnicalDocService(
             TechnicalDocGateway technicalDocGateway,
             DocumentEmbeddingService documentEmbeddingService,
             EmbeddingService embeddingService,
             CurrentUserService currentUserService,
-            DocHistoryService docHistoryService
+            DocHistoryService docHistoryService,
+            FavoriteService favoriteService
     ) {
         this.technicalDocGateway = technicalDocGateway;
         this.documentEmbeddingService = documentEmbeddingService;
         this.embeddingService = embeddingService;
         this.currentUserService = currentUserService;
         this.docHistoryService = docHistoryService;
+        this.favoriteService = favoriteService;
     }
 
     public List<TechnicalDocModel> getAllTechnicalDocs() {
@@ -145,7 +147,10 @@ public class TechnicalDocService {
                 ));
 
         embeddingService.deleteEmbeddingsForTechnicalDoc(id);
-
+        favoriteService.removeAllForDocument(
+                DocumentType.TECHNICAL_DOC,
+                id
+        );
         technicalDocGateway.deleteById(id);
     }
 

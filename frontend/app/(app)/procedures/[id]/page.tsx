@@ -1,13 +1,16 @@
-import { MarkdownContent } from "@/components/documents/markdown-content"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft, Pencil } from "lucide-react"
 
+import { DocHistory } from "@/components/documents/doc-history"
+import { FavoriteButton } from "@/components/documents/favorite-button"
+import { MarkdownContent } from "@/components/documents/markdown-content"
 import { getProcedure } from "@/lib/api/procedures"
 import { getProcedureHistory } from "@/lib/api/doc-history"
-import { DocHistory } from "@/components/documents/doc-history"
+import { getFavorites } from "@/lib/api/favorites"
 import { canEditProcedures } from "@/lib/auth/roles"
 import { getCurrentRole } from "@/lib/auth/get-role"
+import { isFavorite } from "@/lib/favorites"
 
 type ProcedurePageProps = {
     params: Promise<{
@@ -37,7 +40,10 @@ export default async function ProcedurePage({
         notFound()
     }
 
-    const history = await getProcedureHistory(procedureId)
+    const [history, favorites] = await Promise.all([
+        getProcedureHistory(procedureId),
+        getFavorites(),
+    ])
 
     return (
         <div className="min-h-full">
@@ -66,6 +72,17 @@ export default async function ProcedurePage({
                             Edit
                         </Link>
                     )}
+
+                    <FavoriteButton
+                        variant="labeled"
+                        docType="PROCEDURE"
+                        docId={procedure.id}
+                        isFavorite={isFavorite(
+                            favorites,
+                            "PROCEDURE",
+                            procedure.id
+                        )}
+                    />
                 </div>
 
                 <div className="space-y-6">

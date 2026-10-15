@@ -1,12 +1,17 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft, Pencil } from "lucide-react"
+
+import { DocHistory } from "@/components/documents/doc-history"
+import { FavoriteButton } from "@/components/documents/favorite-button"
+import { MarkdownContent } from "@/components/documents/markdown-content"
 import { getCommercialDoc } from "@/lib/api/commercial-doc"
 import { getCommercialDocHistory } from "@/lib/api/doc-history"
-import { DocHistory } from "@/components/documents/doc-history"
+import { getFavorites } from "@/lib/api/favorites"
 import { canEditCommercialDocs } from "@/lib/auth/roles"
 import { getCurrentRole } from "@/lib/auth/get-role"
-import { MarkdownContent } from "@/components/documents/markdown-content"
+import { isFavorite } from "@/lib/favorites"
+
 type CommercialDocPageProps = {
     params: Promise<{
         id: string
@@ -35,7 +40,10 @@ export default async function CommercialDocPage({
         notFound()
     }
 
-    const history = await getCommercialDocHistory(documentId)
+    const [history, favorites] = await Promise.all([
+        getCommercialDocHistory(documentId),
+        getFavorites(),
+    ])
 
     return (
         <div className="min-h-full">
@@ -68,6 +76,17 @@ export default async function CommercialDocPage({
                             Edit
                         </Link>
                     )}
+
+                    <FavoriteButton
+                        variant="labeled"
+                        docType="COMMERCIAL_DOC"
+                        docId={document.id}
+                        isFavorite={isFavorite(
+                            favorites,
+                            "COMMERCIAL_DOC",
+                            document.id
+                        )}
+                    />
                 </div>
 
                 <article className="rounded-2xl border bg-card">

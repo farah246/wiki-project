@@ -5,13 +5,18 @@ import { getProcedures } from "@/lib/api/procedures"
 import { ProcedureList } from "@/components/procedures/procedure-list"
 import { canCreateProcedures } from "@/lib/auth/roles"
 import { getCurrentRole } from "@/lib/auth/get-role"
+import { getFavorites } from "@/lib/api/favorites"
+import { favoriteIdsOf } from "@/lib/favorites"
 
 export default async function ProceduresPage() {
     const role = await getCurrentRole()
 
     const canCreate = canCreateProcedures(role)
 
-    const procedures = await getProcedures()
+    const [procedures, favorites] = await Promise.all([
+        getProcedures(),
+        getFavorites(),
+    ])
 
     return (
         <div className="min-h-full">
@@ -39,7 +44,10 @@ export default async function ProceduresPage() {
                 </div>
 
                 <div className="mt-8 space-y-6">
-                    <ProcedureList procedures={procedures} />
+                    <ProcedureList
+                        procedures={procedures}
+                        favoriteIds={favoriteIdsOf(favorites, "PROCEDURE")}
+                    />
                 </div>
             </div>
         </div>

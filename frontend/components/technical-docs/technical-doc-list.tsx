@@ -13,9 +13,11 @@ import { useCurrentRole } from "@/lib/auth/use-role"
 import { toPlainText } from "@/lib/markdown"
 type TechnicalDocListProps = {
     documents: TechnicalDoc[]
+    favoriteIds: number[]
+
 }
 
-export function TechnicalDocList({ documents }: TechnicalDocListProps) {
+export function TechnicalDocList({ documents, favoriteIds }: TechnicalDocListProps) {
     const role = useCurrentRole()
 
     return (
@@ -38,6 +40,8 @@ export function TechnicalDocList({ documents }: TechnicalDocListProps) {
             canEdit={canEditTechnicalDocs(role)}
             canDelete={canDeleteTechnicalDocs(role)}
             onDelete={deleteTechnicalDoc}
+            favorite={{ docType: "TECHNICAL_DOC", ids: favoriteIds }}
+
         />
     )
 }

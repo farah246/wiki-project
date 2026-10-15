@@ -13,9 +13,11 @@ import { useCurrentRole } from "@/lib/auth/use-role"
 import { toPlainText } from "@/lib/markdown"
 type ProcedureListProps = {
     procedures: Procedure[]
+    favoriteIds: number[]
+
 }
 
-export function ProcedureList({ procedures }: ProcedureListProps) {
+export function ProcedureList({ procedures ,favoriteIds}: ProcedureListProps) {
     const role = useCurrentRole()
 
     return (
@@ -37,6 +39,7 @@ export function ProcedureList({ procedures }: ProcedureListProps) {
             canEdit={canEditProcedures(role)}
             canDelete={canDeleteProcedures(role)}
             onDelete={deleteProcedure}
+            favorite={{ docType: "PROCEDURE", ids: favoriteIds }}
         />
     )
 }

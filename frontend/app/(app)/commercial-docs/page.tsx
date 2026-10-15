@@ -6,14 +6,18 @@ import { CommercialDocList } from "@/components/commercial-docs/commercial-doc-l
 import { PageHeader } from "@/components/ui/page-header"
 import { canCreateCommercialDocs } from "@/lib/auth/roles"
 import { getCurrentRole } from "@/lib/auth/get-role"
+import { getFavorites } from "@/lib/api/favorites"
+import { favoriteIdsOf } from "@/lib/favorites"
 
 export default async function CommercialDocsPage() {
     const role = await getCurrentRole()
 
     const canCreate = canCreateCommercialDocs(role)
 
-    const documents = await getCommercialDocs()
-
+    const [documents, favorites] = await Promise.all([
+        getCommercialDocs(),
+        getFavorites(),
+    ])
     return (
         <div className="min-h-full">
             <div className="mx-auto max-w-6xl px-6 py-8 lg:px-8 lg:py-10">
@@ -34,7 +38,7 @@ export default async function CommercialDocsPage() {
                 />
 
                 <div className="mt-8 space-y-6">
-                    <CommercialDocList documents={documents} />
+                    <CommercialDocList documents={documents} favoriteIds={favoriteIdsOf(favorites, "COMMERCIAL_DOC")} />
                 </div>
             </div>
         </div>

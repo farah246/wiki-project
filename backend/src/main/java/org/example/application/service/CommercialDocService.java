@@ -22,18 +22,21 @@ public class CommercialDocService {
     private final CurrentUserService currentUserService;
     private final DocHistoryService docHistoryService;
 
+    private final FavoriteService favoriteService;
     public CommercialDocService(
             CommercialDocGateway commercialDocGateway,
             EmbeddingService embeddingService,
             DocumentEmbeddingService documentEmbeddingService,
             CurrentUserService currentUserService,
-            DocHistoryService docHistoryService
+            DocHistoryService docHistoryService,
+            FavoriteService favoriteService
     ) {
         this.commercialDocGateway = commercialDocGateway;
         this.embeddingService = embeddingService;
         this.documentEmbeddingService = documentEmbeddingService;
         this.currentUserService = currentUserService;
         this.docHistoryService = docHistoryService;
+        this.favoriteService = favoriteService;
     }
 
     public List<CommercialDocModel> getAllDocs() {
@@ -148,7 +151,10 @@ public class CommercialDocService {
                 ));
 
         embeddingService.deleteEmbeddingsForCommercialDoc(id);
-
+        favoriteService.removeAllForDocument(
+                DocumentType.COMMERCIAL_DOC,
+                id
+        );
         commercialDocGateway.deleteById(id);
     }
 

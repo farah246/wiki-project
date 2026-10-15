@@ -13,9 +13,11 @@ import { useCurrentRole } from "@/lib/auth/use-role"
 import { toPlainText } from "@/lib/markdown"
 type CommercialDocListProps = {
     documents: CommercialDoc[]
+    favoriteIds: number[]
+
 }
 
-export function CommercialDocList({ documents }: CommercialDocListProps) {
+export function CommercialDocList({ documents, favoriteIds }: CommercialDocListProps) {
     const role = useCurrentRole()
 
     return (
@@ -38,6 +40,7 @@ export function CommercialDocList({ documents }: CommercialDocListProps) {
             canEdit={canEditCommercialDocs(role)}
             canDelete={canDeleteCommercialDocs(role)}
             onDelete={deleteCommercialDoc}
+            favorite={{ docType: "COMMERCIAL_DOC", ids: favoriteIds }}
         />
     )
 }

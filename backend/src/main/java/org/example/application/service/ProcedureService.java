@@ -22,18 +22,21 @@ public class ProcedureService {
     private final CurrentUserService currentUserService;
     private final DocHistoryService docHistoryService;
 
+    private final FavoriteService favoriteService;
     public ProcedureService(
             ProcedureGateway procedureGateway,
             EmbeddingService embeddingService,
             DocumentEmbeddingService documentEmbeddingService,
             CurrentUserService currentUserService,
-            DocHistoryService docHistoryService
+            DocHistoryService docHistoryService,
+            FavoriteService favoriteService
     ) {
         this.procedureGateway = procedureGateway;
         this.embeddingService = embeddingService;
         this.documentEmbeddingService = documentEmbeddingService;
         this.currentUserService = currentUserService;
         this.docHistoryService = docHistoryService;
+        this.favoriteService = favoriteService;
     }
 
     public List<ProcedureModel> getAllProcedures() {
@@ -148,7 +151,10 @@ public class ProcedureService {
                 ));
 
         embeddingService.deleteEmbeddingsForProcedure(id);
-
+        favoriteService.removeAllForDocument(
+                DocumentType.PROCEDURE,
+                id
+        );
         procedureGateway.deleteById(id);
     }
 

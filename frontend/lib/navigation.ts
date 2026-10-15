@@ -3,7 +3,8 @@ import {
     FileText,
     BriefcaseBusiness,
     ClipboardList,
-    History
+    History,
+    Star
 } from "lucide-react"
 
 export const navigation = [
@@ -11,6 +12,7 @@ export const navigation = [
     { name: "Technical Docs", href: "/technical-docs", icon: FileText },
     { name: "Commercial Docs", href: "/commercial-docs", icon: BriefcaseBusiness },
     { name: "Procedures", href: "/procedures", icon: ClipboardList },
+    { name: "Favorites", href: "/favorites", icon: Star },
     { name: "Activity", href: "/activity", icon: History },
 
 ]
