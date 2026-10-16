@@ -15,6 +15,5 @@ export const navigation = [
     { name: "Procedures", href: "/procedures", icon: ClipboardList },
     { name: "Favorites", href: "/favorites", icon: Star },
     { name: "Activity", href: "/activity", icon: History },
-    { name: "Ask the wiki", href: "/ask", icon: Sparkles },
-
+    { name: "Ask the wiki", href: "/ask", icon: Sparkles, highlight: true },
 ]

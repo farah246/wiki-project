@@ -19,6 +19,7 @@ import {
 } from "@/lib/auth/roles"
 import { DocumentCard } from "@/components/documents/document-card"
 import { GlobalSearch } from "@/components/dashboard/global-search"
+import { AskHero } from "@/components/dashboard/ask-hero"
 
 type RecentItem = {
     key: string
@@ -115,6 +116,11 @@ export default async function Dashboard() {
                         Everything your team knows, organized in one
                         intelligent workspace.
                     </p>
+                </section>
+
+                {/* Ask the wiki */}
+                <section className="mb-6">
+                    <AskHero />
                 </section>
 
                 {/* Global search */}
