@@ -1,26 +1,19 @@
 "use client"
 
+import { useEffect, useRef, type KeyboardEvent } from "react"
+import Link from "next/link"
 import {
-    useCallback,
-    useEffect,
-    useRef,
-    useState,
-    type KeyboardEvent,
-} from "react"
-import { useAuth } from "@clerk/nextjs"
-import { ArrowUp, RotateCcw, Sparkles, Square } from "lucide-react"
+    ArrowUp,
+    Maximize2,
+    RotateCcw,
+    Sparkles,
+    Square,
+    X,
+} from "lucide-react"
 
 import { AssistantMessage } from "@/components/ask/assistant-message"
-import {
-    AskHttpError,
-    streamAsk,
-    type AssistantMessageData,
-    type ChatMessage,
-} from "@/lib/ask"
+import { MAX_QUESTION_LENGTH, useAsk } from "@/components/ask/ask-provider"
 import { cn } from "@/lib/utils"
-
-// Same limit as AskRequest on the backend
-const MAX_LENGTH = 500
 
 const EXAMPLES = [
     "How do we deploy the Wiki backend?",
@@ -28,45 +21,36 @@ const EXAMPLES = [
     "Which proposals mention database security?",
 ]
 
-function errorMessageFor(error: unknown): string {
-    if (error instanceof AskHttpError) {
-        if (error.status === 400) {
-            return `The question is empty or longer than ${MAX_LENGTH} characters.`
-        }
-        if (error.status === 401 || error.status === 403) {
-            return "You are not allowed to use this feature. Sign in again and retry."
-        }
-        if (error.status === 503) {
-            return "The assistant is temporarily unavailable. Please try again later."
-        }
-    }
+const ICON_BUTTON =
+    "flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
 
-    if (error instanceof TypeError) {
-        return "Can't reach the server. Check your connection and try again."
-    }
-
-    return "Something went wrong. Try again."
+type AskChatProps = {
+    // "page": the full /ask page.  "panel": the side panel.
+    variant: "page" | "panel"
 }
 
-export function AskChat() {
-    const { getToken } = useAuth()
+// The conversation itself lives in <AskProvider>; this is only its display,
+// shared by the /ask page and the side panel.
+export function AskChat({ variant }: AskChatProps) {
+    const {
+        messages,
+        busy,
+        draft,
+        setDraft,
+        send,
+        stop,
+        newChat,
+        retry,
+        closePanel,
+        closeIfOverlay,
+    } = useAsk()
 
-    const [messages, setMessages] = useState<ChatMessage[]>([])
-    const [input, setInput] = useState("")
+    const isPanel = variant === "panel"
 
     const scrollRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLTextAreaElement>(null)
-    const abortRef = useRef<AbortController | null>(null)
     // follow the answer while it grows, unless the user scrolled up to read
     const stickToBottom = useRef(true)
-    // crypto.randomUUID() does not exist on plain-HTTP pages, so use a counter
-    const nextId = useRef(0)
-
-    const busy = messages.some(
-        (message) =>
-            message.role === "assistant" &&
-            (message.status === "searching" || message.status === "streaming")
-    )
 
     // keep the newest text in view
     useEffect(() => {
@@ -83,158 +67,16 @@ export function AskChat() {
 
         el.style.height = "auto"
         el.style.height = `${Math.min(el.scrollHeight, 160)}px`
-    }, [input])
+    }, [draft])
 
-    // back to the input once an answer is finished
+    // back to the input once an answer is finished (and when the view opens)
     useEffect(() => {
         if (!busy) inputRef.current?.focus()
     }, [busy])
 
-    // leaving the page cancels the request in progress
-    useEffect(() => {
-        return () => abortRef.current?.abort()
-    }, [])
-
-    const send = useCallback(
-        async (raw: string) => {
-            const question = raw.trim()
-            if (!question || busy) return
-
-            const n = nextId.current++
-            const botId = `a${n}`
-
-            setInput("")
-            stickToBottom.current = true
-            setMessages((previous) => [
-                ...previous,
-                { id: `u${n}`, role: "user", content: question },
-                {
-                    id: botId,
-                    role: "assistant",
-                    question,
-                    content: "",
-                    sources: [],
-                    status: "searching",
-                },
-            ])
-
-            const patch = (
-                change: (message: AssistantMessageData) => AssistantMessageData
-            ) =>
-                setMessages((previous) =>
-                    previous.map((message) =>
-                        message.id === botId && message.role === "assistant"
-                            ? change(message)
-                            : message
-                    )
-                )
-
-            // Words can arrive faster than the screen refreshes: collect them
-            // and update the page once per frame.
-            let pending = ""
-            let frame: number | null = null
-
-            const flush = () => {
-                if (frame !== null) {
-                    cancelAnimationFrame(frame)
-                    frame = null
-                }
-                if (!pending) return
-
-                const chunk = pending
-                pending = ""
-                patch((message) => ({
-                    ...message,
-                    content: message.content + chunk,
-                    status: "streaming",
-                }))
-            }
-
-            const controller = new AbortController()
-            abortRef.current = controller
-
-            try {
-                const token = await getToken()
-                if (!token) throw new AskHttpError(401)
-
-                const completed = await streamAsk(
-                    question,
-                    token,
-                    {
-                        onToken: (text) => {
-                            pending += text
-                            if (frame === null) {
-                                frame = requestAnimationFrame(flush)
-                            }
-                        },
-                        onSources: (sources) => {
-                            flush()
-                            patch((message) => ({ ...message, sources }))
-                        },
-                        onError: (message) => {
-                            flush()
-                            patch((current) => ({
-                                ...current,
-                                status: "error",
-                                error: message,
-                            }))
-                        },
-                    },
-                    controller.signal
-                )
-
-                flush()
-                patch((message) => {
-                    if (message.status === "error") return message
-
-                    return completed
-                        ? { ...message, status: "done" }
-                        : {
-                            ...message,
-                            status: "error",
-                            error: "The connection was interrupted before the answer was complete.",
-                        }
-                })
-            } catch (error) {
-                flush()
-
-                if (controller.signal.aborted) {
-                    patch((message) => ({ ...message, status: "stopped" }))
-                } else {
-                    console.error("Ask the wiki failed:", error)
-                    patch((message) => ({
-                        ...message,
-                        status: "error",
-                        error: errorMessageFor(error),
-                    }))
-                }
-            } finally {
-                if (abortRef.current === controller) {
-                    abortRef.current = null
-                }
-            }
-        },
-        [busy, getToken]
-    )
-
-    const stop = () => abortRef.current?.abort()
-
-    const newChat = () => {
-        abortRef.current?.abort()
-        setMessages([])
-        setInput("")
-    }
-
-    // asks the last question again, replacing the failed answer
-    const retry = () => {
-        const lastQuestion = [...messages]
-            .reverse()
-            .find((message) => message.role === "user")
-
-        if (!lastQuestion || busy) return
-
-        setMessages((previous) => previous.slice(0, -2))
-        void send(lastQuestion.content)
+    const submit = (question: string) => {
+        stickToBottom.current = true
+        void send(question)
     }
 
     const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -244,7 +86,7 @@ export function AskChat() {
             !event.nativeEvent.isComposing
         ) {
             event.preventDefault()
-            void send(input)
+            submit(draft)
         }
     }
 
@@ -257,45 +99,95 @@ export function AskChat() {
     }
 
     const lastIndex = messages.length - 1
-    const canSend = input.trim().length > 0 && !busy
+    const canSend = draft.trim().length > 0 && !busy
+    const nearLimit = draft.length >= MAX_QUESTION_LENGTH - 100
 
     return (
-        <div className="flex h-full flex-col">
+        <div className="flex h-full min-h-0 flex-col">
             {/* Header */}
-            <div className="flex shrink-0 items-center justify-between gap-4 border-b py-4">
-                <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/40">
-                        <Sparkles className="h-[18px] w-[18px] text-violet-600" />
+            {isPanel ? (
+                <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b">
+                    <div className="flex min-w-0 items-center gap-2">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-950/40">
+                            <Sparkles className="h-4 w-4 text-violet-600" />
+                        </div>
+
+                        <h2 className="truncate text-sm font-semibold">
+                            Ask the wiki
+                        </h2>
                     </div>
 
-                    <div className="min-w-0">
-                        <h1 className="text-lg font-semibold tracking-tight">
-                            Ask the wiki
-                        </h1>
+                    <div className="flex shrink-0 items-center gap-1">
+                        {messages.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={newChat}
+                                className={ICON_BUTTON}
+                                aria-label="New chat"
+                                title="New chat"
+                            >
+                                <RotateCcw className="h-4 w-4" />
+                            </button>
+                        )}
 
-                        <p className="truncate text-sm text-muted-foreground">
-                            Answers come from your documents, with sources.
-                        </p>
+                        <Link
+                            href="/ask"
+                            onClick={closePanel}
+                            className={ICON_BUTTON}
+                            aria-label="Open the full page"
+                            title="Open the full page"
+                        >
+                            <Maximize2 className="h-4 w-4" />
+                        </Link>
+
+                        <button
+                            type="button"
+                            onClick={closePanel}
+                            className={ICON_BUTTON}
+                            aria-label="Close"
+                            title="Close (Esc)"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
                     </div>
                 </div>
+            ) : (
+                <div className="flex shrink-0 items-center justify-between gap-4 border-b py-4">
+                    <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/40">
+                            <Sparkles className="h-[18px] w-[18px] text-violet-600" />
+                        </div>
 
-                {messages.length > 0 && (
-                    <button
-                        type="button"
-                        onClick={newChat}
-                        className="inline-flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                    >
-                        <RotateCcw className="h-4 w-4" />
-                        New chat
-                    </button>
-                )}
-            </div>
+                        <div className="min-w-0">
+                            <h1 className="text-lg font-semibold tracking-tight">
+                                Ask the wiki
+                            </h1>
 
-            {/* Thread */}
+                            <p className="truncate text-sm text-muted-foreground">
+                                Answers come from your documents, with sources.
+                            </p>
+                        </div>
+                    </div>
+
+                    {messages.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={newChat}
+                            className="inline-flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                        >
+                            <RotateCcw className="h-4 w-4" />
+                            New chat
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {/* Thread (@container: the sources use one or two columns
+                depending on THIS width, not on the screen width) */}
             <div
                 ref={scrollRef}
                 onScroll={handleScroll}
-                className="min-h-0 flex-1 overflow-y-auto py-6"
+                className="@container min-h-0 flex-1 overflow-y-auto py-6"
             >
                 {messages.length === 0 ? (
                     <div className="mx-auto flex h-full max-w-lg flex-col items-center justify-center text-center">
@@ -317,7 +209,7 @@ export function AskChat() {
                                 <button
                                     key={example}
                                     type="button"
-                                    onClick={() => void send(example)}
+                                    onClick={() => submit(example)}
                                     className="rounded-xl border px-4 py-3 text-left text-sm transition hover:border-violet-300 hover:bg-violet-50 dark:hover:bg-violet-950/30"
                                 >
                                     {example}
@@ -341,6 +233,7 @@ export function AskChat() {
                                 <AssistantMessage
                                     key={message.id}
                                     message={message}
+                                    onSourceOpen={closeIfOverlay}
                                     onRetry={
                                         index === lastIndex &&
                                         message.status === "error"
@@ -358,12 +251,13 @@ export function AskChat() {
             <div className="shrink-0 pb-4 pt-2">
                 <div className="flex items-end gap-2 rounded-2xl border bg-background p-2 shadow-sm transition focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 dark:focus-within:ring-violet-950">
                     <textarea
+                        id="ask-input"
                         ref={inputRef}
-                        value={input}
-                        onChange={(event) => setInput(event.target.value)}
+                        value={draft}
+                        onChange={(event) => setDraft(event.target.value)}
                         onKeyDown={handleKeyDown}
                         rows={1}
-                        maxLength={MAX_LENGTH}
+                        maxLength={MAX_QUESTION_LENGTH}
                         placeholder="Ask a question about your wiki…"
                         aria-label="Your question"
                         className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:text-muted-foreground"
@@ -381,7 +275,7 @@ export function AskChat() {
                     ) : (
                         <button
                             type="button"
-                            onClick={() => void send(input)}
+                            onClick={() => submit(draft)}
                             disabled={!canSend}
                             aria-label="Send the question"
                             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white transition hover:bg-violet-700 disabled:opacity-40"
@@ -394,14 +288,14 @@ export function AskChat() {
                 <p
                     className={cn(
                         "mt-2 text-center text-[11px]",
-                        input.length >= MAX_LENGTH - 100
-                            ? "text-foreground"
-                            : "text-muted-foreground"
+                        nearLimit ? "text-foreground" : "text-muted-foreground"
                     )}
                 >
-                    {input.length >= MAX_LENGTH - 100
-                        ? `${input.length}/${MAX_LENGTH}`
-                        : "Answers can be wrong: check the sources. Enter to send, Shift+Enter for a new line."}
+                    {nearLimit
+                        ? `${draft.length}/${MAX_QUESTION_LENGTH}`
+                        : isPanel
+                            ? "Answers can be wrong: check the sources."
+                            : "Answers can be wrong: check the sources. Enter to send, Shift+Enter for a new line."}
                 </p>
             </div>
         </div>

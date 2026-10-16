@@ -5,7 +5,7 @@ import { AskChat } from "@/components/ask/ask-chat"
 export default function AskPage() {
     return (
         <div className="mx-auto h-[calc(100dvh-4rem)] max-w-4xl px-4 md:px-6">
-            <AskChat />
+            <AskChat variant="page" />
         </div>
     )
 }

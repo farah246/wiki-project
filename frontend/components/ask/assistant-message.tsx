@@ -54,9 +54,15 @@ type AssistantMessageProps = {
     message: AssistantMessageData
     // only given for the last message, when it failed
     onRetry?: () => void
+    // called when a source document is opened
+    onSourceOpen?: () => void
 }
 
-export function AssistantMessage({ message, onRetry }: AssistantMessageProps) {
+export function AssistantMessage({
+                                     message,
+                                     onRetry,
+                                     onSourceOpen,
+                                 }: AssistantMessageProps) {
     const { status, sources, question } = message
 
     const [activeSource, setActiveSource] = useState<number | null>(null)
@@ -197,7 +203,7 @@ export function AssistantMessage({ message, onRetry }: AssistantMessageProps) {
                             Sources
                         </p>
 
-                        <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="grid gap-2 @lg:grid-cols-2">
                             {sources.map((source) => (
                                 <SourceCard
                                     key={source.number}
@@ -205,6 +211,7 @@ export function AssistantMessage({ message, onRetry }: AssistantMessageProps) {
                                     source={source}
                                     question={question}
                                     active={activeSource === source.number}
+                                    onOpen={onSourceOpen}
                                 />
                             ))}
                         </div>

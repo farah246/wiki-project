@@ -33,9 +33,17 @@ type SourceCardProps = {
     // the question, passed as ?q= so the document page highlights its words
     question: string
     active: boolean
+    // called when the document is opened (the panel closes itself on small screens)
+    onOpen?: () => void
 }
 
-export function SourceCard({ id, source, question, active }: SourceCardProps) {
+export function SourceCard({
+                               id,
+                               source,
+                               question,
+                               active,
+                               onOpen,
+                           }: SourceCardProps) {
     const config = TYPE_CONFIG[source.documentType] ?? TYPE_CONFIG.TECHNICAL
     const Icon = config.Icon
 
@@ -43,9 +51,9 @@ export function SourceCard({ id, source, question, active }: SourceCardProps) {
         <Link
             id={id}
             href={`${config.hrefPrefix}/${source.documentId}?q=${encodeURIComponent(question)}`}
-            // a new tab: leaving this page would erase the conversation
-            target="_blank"
-            rel="noopener noreferrer"
+            // same tab: the conversation lives in the layout, so it is still
+            // there after the document opens
+            onClick={onOpen}
             className={cn(
                 "flex items-start gap-3 rounded-xl border bg-card px-3 py-2.5 transition hover:bg-muted/50",
                 active && "border-violet-400 ring-2 ring-violet-100 dark:ring-violet-950"
