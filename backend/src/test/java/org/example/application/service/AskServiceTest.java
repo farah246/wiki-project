@@ -6,11 +6,12 @@ import org.example.domain.model.AskSourceModel;
 import org.example.domain.model.SearchResultModel;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -68,5 +69,35 @@ class AskServiceTest {
         AskAnswerModel answer = service.ask("question");
 
         assertThat(answer.sources()).extracting(AskSourceModel::number).containsExactly(1);
+    }
+
+    @Test
+    void streamsTheTokensAndKeepsOnlyTheCitedSources() {
+        when(search.retrieveChunks(anyString(), anyInt())).thenReturn(List.of(
+                hit(1, "A", 0.9), hit(2, "B", 0.8)));
+        when(llm.stream(anyString(), anyString(), any())).thenAnswer(inv -> {
+            Consumer<String> onToken = inv.getArgument(2);
+            onToken.accept("Use B ");
+            onToken.accept("[2].");
+            return "Use B [2].";
+        });
+
+        List<String> tokens = new ArrayList<>();
+        AskAnswerModel answer = service.askStreaming("what?", tokens::add);
+
+        assertThat(tokens).containsExactly("Use B ", "[2].");
+        assertThat(answer.sources()).extracting(AskSourceModel::number).containsExactly(2);
+    }
+
+    @Test
+    void streamsTheFallbackWithoutCallingTheLlm() {
+        when(search.retrieveChunks(anyString(), anyInt())).thenReturn(List.of(hit(1, "Deploy", 0.2)));
+
+        List<String> tokens = new ArrayList<>();
+        AskAnswerModel answer = service.askStreaming("how?", tokens::add);
+
+        assertThat(tokens).containsExactly(AskService.NO_ANSWER);
+        assertThat(answer.sources()).isEmpty();
+        verifyNoInteractions(llm);
     }
 }

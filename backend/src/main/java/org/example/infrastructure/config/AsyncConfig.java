@@ -21,4 +21,14 @@ public class AsyncConfig {
         ex.setThreadNamePrefix("indexing-");
         return ex;
     }
+
+    @Bean(name = "askExecutor")
+    public Executor askExecutor() {
+        ThreadPoolTaskExecutor ex = new ThreadPoolTaskExecutor();
+        ex.setCorePoolSize(4);
+        ex.setMaxPoolSize(4);
+        ex.setQueueCapacity(8);
+        ex.setThreadNamePrefix("ask-");
+        return ex;
+    }
 }

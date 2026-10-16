@@ -4,7 +4,8 @@ import {
     BriefcaseBusiness,
     ClipboardList,
     History,
-    Star
+    Star,
+    Sparkles
 } from "lucide-react"
 
 export const navigation = [
@@ -14,5 +15,6 @@ export const navigation = [
     { name: "Procedures", href: "/procedures", icon: ClipboardList },
     { name: "Favorites", href: "/favorites", icon: Star },
     { name: "Activity", href: "/activity", icon: History },
+    { name: "Ask the wiki", href: "/ask", icon: Sparkles },
 
 ]
