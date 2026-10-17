@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react"
 import { Menu, X } from "lucide-react"
 
-import { NavLink } from "@/components/nav-link"
-import { adminNavigation, navigation } from "@/lib/navigation"
+import { NavSections } from "@/components/nav-sections"
 
 export default function MobileNav({ showAdmin }: { showAdmin: boolean }) {
     const [open, setOpen] = useState(false)
@@ -56,26 +55,9 @@ export default function MobileNav({ showAdmin }: { showAdmin: boolean }) {
                             </button>
                         </div>
 
-                        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-                            {navigation.map((item) => (
-                                <NavLink
-                                    key={item.href}
-                                    item={item}
-                                    onNavigate={close}
-                                />
-                            ))}
-
-                            {showAdmin && (
-                                <>
-                                    <div className="my-4 border-t" />
-
-                                    <NavLink
-                                        item={adminNavigation}
-                                        onNavigate={close}
-                                    />
-                                </>
-                            )}
-                        </nav>
+                        <div className="flex-1 overflow-y-auto px-3 py-4">
+                            <NavSections showAdmin={showAdmin} onNavigate={close} />
+                        </div>
                     </div>
                 </div>
             )}

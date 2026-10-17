@@ -1,6 +1,5 @@
 import Link from "next/link"
 
-import { SectionCard } from "@/components/dashboard/section-card"
 import { formatRelativeTime } from "@/lib/format"
 import { DOC_PATHS, type ActivityEntry } from "@/lib/types/activity"
 import { cn } from "@/lib/utils"
@@ -14,7 +13,7 @@ const actions: Record<string, { label: string; dot: string }> = {
 
 const unknownAction = { label: "Changed", dot: "bg-muted-foreground" }
 
-const rowClassName = "flex items-start gap-3 px-6 py-3.5"
+const rowClassName = "flex items-start gap-3 px-6 py-4"
 
 function ActivityRow({
                          entry,
@@ -76,39 +75,35 @@ type ActivityListProps = {
     entries: ActivityEntry[]
     // Admins see everyone's activity, so each row names its author
     showUser: boolean
-    className?: string
 }
 
-export function ActivityList({
-                                 entries,
-                                 showUser,
-                                 className,
-                             }: ActivityListProps) {
+export function ActivityList({ entries, showUser }: ActivityListProps) {
+    if (entries.length === 0) {
+        return (
+            <p className="px-6 py-14 text-center text-sm text-muted-foreground">
+                No activity yet.
+            </p>
+        )
+    }
+
     return (
-        <SectionCard
-            kicker="Workspace pulse"
-            title="Activity"
-            description={
-                showUser
-                    ? "Latest changes across the workspace"
-                    : "Your latest changes"
-            }
-            action={{ label: "View all", href: "/activity" }}
-            className={className}
-        >
-            {entries.length > 0 ? (
-                <ul className="divide-y">
-                    {entries.map((entry) => (
-                        <li key={entry.id}>
-                            <ActivityRow entry={entry} showUser={showUser} />
-                        </li>
-                    ))}
-                </ul>
-            ) : (
-                <p className="px-6 py-10 text-center text-sm text-muted-foreground">
-                    No activity yet.
-                </p>
-            )}
-        </SectionCard>
+        <>
+            <ul className="divide-y">
+                {entries.map((entry) => (
+                    <li key={entry.id}>
+                        <ActivityRow entry={entry} showUser={showUser} />
+                    </li>
+                ))}
+            </ul>
+
+            <div className="border-t px-6 py-4 text-right">
+                <Link
+                    href="/activity"
+                    className="text-sm font-medium text-violet-600 transition hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300"
+                >
+                    View all activity
+                </Link>
+            </div>
+        </>
     )
 }
