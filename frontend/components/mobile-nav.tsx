@@ -1,22 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Menu, Settings, X } from "lucide-react"
+import { Menu, X } from "lucide-react"
 
-import { navigation } from "@/lib/navigation"
-
-function linkClass(active: boolean) {
-    return `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-        active
-            ? "bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300"
-            : "text-muted-foreground hover:bg-violet-50 hover:text-violet-700 dark:hover:bg-violet-950/30 dark:hover:text-violet-300"
-    }`
-}
+import { NavLink } from "@/components/nav-link"
+import { adminNavigation, navigation } from "@/lib/navigation"
 
 export default function MobileNav({ showAdmin }: { showAdmin: boolean }) {
-    const pathname = usePathname()
     const [open, setOpen] = useState(false)
 
     useEffect(() => {
@@ -67,40 +57,22 @@ export default function MobileNav({ showAdmin }: { showAdmin: boolean }) {
                         </div>
 
                         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-                            {navigation.map((item) => {
-                                const Icon = item.icon
-                                const active =
-                                    pathname === item.href ||
-                                    pathname.startsWith(`${item.href}/`)
-
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        onClick={close}
-                                        className={linkClass(active)}
-                                    >
-                                        <Icon className="h-[18px] w-[18px] shrink-0" />
-                                        <span>{item.name}</span>
-                                    </Link>
-                                )
-                            })}
+                            {navigation.map((item) => (
+                                <NavLink
+                                    key={item.href}
+                                    item={item}
+                                    onNavigate={close}
+                                />
+                            ))}
 
                             {showAdmin && (
                                 <>
                                     <div className="my-4 border-t" />
 
-                                    <Link
-                                        href="/admin"
-                                        onClick={close}
-                                        className={linkClass(
-                                            pathname === "/admin" ||
-                                            pathname.startsWith("/admin/")
-                                        )}
-                                    >
-                                        <Settings className="h-[18px] w-[18px] shrink-0" />
-                                        <span>Administration</span>
-                                    </Link>
+                                    <NavLink
+                                        item={adminNavigation}
+                                        onNavigate={close}
+                                    />
                                 </>
                             )}
                         </nav>

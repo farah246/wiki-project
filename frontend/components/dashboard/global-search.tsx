@@ -233,6 +233,8 @@ export function GlobalSearch() {
                 onChange={setQuery}
                 onSubmit={handleSearch}
                 placeholder="Search your entire knowledge..."
+                inputClassName="h-14 rounded-2xl bg-card shadow-sm"
+
             />
 
             {searchQuery && (

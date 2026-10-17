@@ -1,25 +1,21 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Settings } from "lucide-react"
-import { navigation } from "@/lib/navigation"
 
+import { NavLink } from "@/components/nav-link"
+import { adminNavigation, navigation } from "@/lib/navigation"
 
+const sectionLabel =
+    "mb-3 px-3 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground"
 
 export default function AppSidebar({ showAdmin }: { showAdmin: boolean }) {
-    const pathname = usePathname()
-
     return (
-        <aside className="hidden w-64 shrink-0 border-r bg-background md:flex md:flex-col">
+        <aside className="hidden w-64 shrink-0 border-r bg-sidebar md:flex md:flex-col">
 
             {/* Brand */}
             <div className="flex h-16 items-center border-b px-6">
-                <Link
-                    href="/"
-                    className="flex items-center gap-3"
-                >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-600 text-sm font-bold text-white shadow-sm">
+                <Link href="/" className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#8128ff] to-[#c000d9] text-sm font-bold text-white shadow-md shadow-violet-500/25">
                         W
                     </div>
 
@@ -37,35 +33,12 @@ export default function AppSidebar({ showAdmin }: { showAdmin: boolean }) {
 
             {/* Navigation */}
             <div className="flex-1 overflow-y-auto px-3 py-6">
-
-                <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Workspace
-                </p>
+                <p className={sectionLabel}>Workspace</p>
 
                 <nav className="space-y-1">
-                    {navigation.map((item) => {
-                        const Icon = item.icon
-
-                        const isActive =
-                            pathname === item.href ||
-                            pathname.startsWith(`${item.href}/`)
-
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                                    isActive
-                                        ? "bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300"
-                                        : "text-muted-foreground hover:bg-violet-50 hover:text-violet-700 dark:hover:bg-violet-950/30 dark:hover:text-violet-300"
-                                }`}
-                            >
-                                <Icon className="h-[18px] w-[18px] shrink-0" />
-
-                                <span>{item.name}</span>
-                            </Link>
-                        )
-                    })}
+                    {navigation.map((item) => (
+                        <NavLink key={item.href} item={item} />
+                    ))}
                 </nav>
 
                 {/* Management: visible to admins only */}
@@ -73,29 +46,14 @@ export default function AppSidebar({ showAdmin }: { showAdmin: boolean }) {
                     <>
                         <div className="my-7 border-t" />
 
-                        <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            Management
-                        </p>
+                        <p className={sectionLabel}>Management</p>
 
                         <nav>
-                            <Link
-                                href="/admin"
-                                className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                                    pathname === "/admin" ||
-                                    pathname.startsWith("/admin/")
-                                        ? "bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300"
-                                        : "text-muted-foreground hover:bg-violet-50 hover:text-violet-700 dark:hover:bg-violet-950/30 dark:hover:text-violet-300"
-                                }`}
-                            >
-                                <Settings className="h-[18px] w-[18px]" />
-
-                                <span>Administration</span>
-                            </Link>
+                            <NavLink item={adminNavigation} />
                         </nav>
                     </>
                 )}
             </div>
-
         </aside>
     )
 }

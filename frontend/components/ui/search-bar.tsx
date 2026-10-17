@@ -2,11 +2,15 @@
 
 import { Search, X } from "lucide-react"
 
+import { cn } from "@/lib/utils"
+
 type SearchBarProps = {
     placeholder?: string
     value?: string
     onChange?: (value: string) => void
     onSubmit?: () => void
+    // Overrides the look of the input (taller, rounder...)
+    inputClassName?: string
 }
 
 export function SearchBar({
@@ -14,6 +18,7 @@ export function SearchBar({
                               value = "",
                               onChange,
                               onSubmit,
+                              inputClassName,
                           }: SearchBarProps) {
     return (
         <div className="relative w-full">
@@ -30,7 +35,10 @@ export function SearchBar({
                     }
                 }}
                 placeholder={placeholder}
-                className="h-12 w-full rounded-xl border bg-background pl-12 pr-12 text-sm outline-none transition placeholder:text-muted-foreground focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-950 [&::-webkit-search-cancel-button]:appearance-none"
+                className={cn(
+                    "h-12 w-full rounded-xl border bg-background pl-12 pr-12 text-sm outline-none transition placeholder:text-muted-foreground focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-950 [&::-webkit-search-cancel-button]:appearance-none",
+                    inputClassName
+                )}
             />
 
             {value && (
