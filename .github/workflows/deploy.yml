@@ -45,22 +45,32 @@ jobs:
       - id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - uses: docker/setup-buildx-action@v3
+
       - name: Build and push backend
-        env:
-          REG: ${{ steps.ecr.outputs.registry }}
-        run: |
-          docker build -t $REG/wiki-backend:${{ github.sha }} -t $REG/wiki-backend:latest ./backend
-          docker push --all-tags $REG/wiki-backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/wiki-backend:${{ github.sha }}
+            ${{ steps.ecr.outputs.registry }}/wiki-backend:latest
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
 
       - name: Build and push frontend
-        env:
-          REG: ${{ steps.ecr.outputs.registry }}
-        run: |
-          docker build \
-            --build-arg NEXT_PUBLIC_API_URL=${{ env.SERVER_URL }} \
-            --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }} \
-            -t $REG/wiki-frontend:${{ github.sha }} -t $REG/wiki-frontend:latest ./frontend
-          docker push --all-tags $REG/wiki-frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ env.SERVER_URL }}
+            NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/wiki-frontend:${{ github.sha }}
+            ${{ steps.ecr.outputs.registry }}/wiki-frontend:latest
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
 
       - name: Deploy via SSM
         env:
@@ -105,10 +115,14 @@ jobs:
 
       - name: Verify
         run: |
-          for i in $(seq 1 20); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' $SERVER_URL/ || true)
-            echo "attempt $i: HTTP $code"
-            [ "$code" = "200" ] && exit 0
-            sleep 10
-          done
-          exit 1
+          check() {
+            for i in $(seq 1 20); do
+              code=$(curl -s -o /dev/null -w '%{http_code}' "$1" || true)
+              echo "$1 attempt $i: HTTP $code (expected $2)"
+              [ "$code" = "$2" ] && return 0
+              sleep 10
+            done
+            return 1
+          }
+          check "$SERVER_URL/" 200
+          check "$SERVER_URL/api/procedures" 401
