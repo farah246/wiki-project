@@ -23,6 +23,7 @@ jobs:
   deploy:
     needs: ci
     runs-on: ubuntu-latest
+    timeout-minutes: 20          # NEW
     steps:
       - uses: actions/checkout@v4
 
