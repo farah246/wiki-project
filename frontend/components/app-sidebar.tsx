@@ -1,12 +1,6 @@
-"use client"
-
 import Link from "next/link"
 
-import { NavLink } from "@/components/nav-link"
-import { adminNavigation, navigation } from "@/lib/navigation"
-
-const sectionLabel =
-    "mb-3 px-3 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground"
+import { NavSections } from "@/components/nav-sections"
 
 export default function AppSidebar({ showAdmin }: { showAdmin: boolean }) {
     return (
@@ -33,26 +27,7 @@ export default function AppSidebar({ showAdmin }: { showAdmin: boolean }) {
 
             {/* Navigation */}
             <div className="flex-1 overflow-y-auto px-3 py-6">
-                <p className={sectionLabel}>Workspace</p>
-
-                <nav className="space-y-1">
-                    {navigation.map((item) => (
-                        <NavLink key={item.href} item={item} />
-                    ))}
-                </nav>
-
-                {/* Management: visible to admins only */}
-                {showAdmin && (
-                    <>
-                        <div className="my-7 border-t" />
-
-                        <p className={sectionLabel}>Management</p>
-
-                        <nav>
-                            <NavLink item={adminNavigation} />
-                        </nav>
-                    </>
-                )}
+                <NavSections showAdmin={showAdmin} />
             </div>
         </aside>
     )

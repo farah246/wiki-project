@@ -11,7 +11,7 @@ export type RecentDocument = {
     date: string
 }
 
-type Sources = {
+export type DocumentSources = {
     technicalDocs: TechnicalDoc[]
     commercialDocs: CommercialDoc[]
     procedures: Procedure[]
@@ -19,8 +19,8 @@ type Sources = {
 
 // The latest documents across the three types, newest first
 export function buildRecentDocuments(
-    { technicalDocs, commercialDocs, procedures }: Sources,
-    limit = 6
+    { technicalDocs, commercialDocs, procedures }: DocumentSources,
+    limit = 5
 ): RecentDocument[] {
     const documents = [
         ...technicalDocs.map(
