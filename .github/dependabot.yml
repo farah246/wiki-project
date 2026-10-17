@@ -7,7 +7,7 @@ updates:
       interval: weekly
     open-pull-requests-limit: 3
 
-  # JS packages (Next.js, Clerk, etc.)
+  # JS packages (Next.js, Clerk, etc.)huryuiyti"yt"yt"yt
   - package-ecosystem: npm
     directory: /frontend
     schedule:
