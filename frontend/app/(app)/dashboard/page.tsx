@@ -1,313 +1,156 @@
-import Link from "next/link"
 import {
-    ArrowRight,
     BriefcaseBusiness,
     ClipboardList,
     FileText,
     Sparkles,
 } from "lucide-react"
 
-import { getTechnicalDocs } from "@/lib/api/technical-doc"
+import { ActivityList } from "@/components/dashboard/activity-list"
+import { AskHero } from "@/components/dashboard/ask-hero"
+import { GlobalSearch } from "@/components/dashboard/global-search"
+import { RecentDocuments } from "@/components/dashboard/recent-documents"
+import { SectionHeading } from "@/components/dashboard/section-heading"
+import { StatCard, type StatCardProps } from "@/components/dashboard/stat-card"
+import { getActivity, type ActivityScope } from "@/lib/api/activity"
 import { getCommercialDocs } from "@/lib/api/commercial-doc"
 import { getProcedures } from "@/lib/api/procedures"
+import { getTechnicalDocs } from "@/lib/api/technical-doc"
 import { getCurrentUser } from "@/lib/api/users"
 import { getCurrentRole } from "@/lib/auth/get-role"
-import {
-    canCreateCommercialDocs,
-    canCreateProcedures,
-    canCreateTechnicalDocs,
-} from "@/lib/auth/roles"
-import { DocumentCard } from "@/components/documents/document-card"
-import { GlobalSearch } from "@/components/dashboard/global-search"
-import { AskHero } from "@/components/dashboard/ask-hero"
+import { isAdmin } from "@/lib/auth/roles"
+import { buildRecentDocuments } from "@/lib/recent-documents"
 
-type RecentItem = {
-    key: string
-    title: string
-    description: string
-    type: "technical" | "commercial" | "procedure"
-    href: string
-    date: string
+const ACTIVITY_LIMIT = 5
+
+// The dashboard must still load when the activity feed is unavailable
+async function getRecentActivity(scope: ActivityScope) {
+    try {
+        const page = await getActivity(0, undefined, scope)
+
+        return page?.items.slice(0, ACTIVITY_LIMIT) ?? []
+    } catch {
+        return []
+    }
 }
 
 export default async function Dashboard() {
-    const clerkRole = await getCurrentRole()
+    const role = await getCurrentRole()
+    const admin = isAdmin(role)
 
-    const [
+    const [technicalDocs, commercialDocs, procedures, currentUser, activity] =
+        await Promise.all([
+            getTechnicalDocs(),
+            getCommercialDocs(),
+            getProcedures(),
+            getCurrentUser(),
+            // admins see everyone's activity, everybody else their own
+            getRecentActivity(admin ? "all" : "me"),
+        ])
+
+    const recentDocuments = buildRecentDocuments({
         technicalDocs,
         commercialDocs,
         procedures,
-        currentUser,
-    ] = await Promise.all([
-        getTechnicalDocs(),
-        getCommercialDocs(),
-        getProcedures(),
-        getCurrentUser(),
-    ])
+    })
 
-    // Latest activity across the three document types
-    const recentDocs: RecentItem[] = [
-        ...technicalDocs.map((doc) => ({
-            key: `technical-${doc.id}`,
-            title: doc.title,
-            description: doc.content,
-            type: "technical" as const,
-            href: `/technical-docs/${doc.id}`,
-            date: doc.updatedAt || doc.createdAt || "",
-        })),
-        ...commercialDocs.map((doc) => ({
-            key: `commercial-${doc.id}`,
-            title: doc.title,
-            description: doc.proposalText,
-            type: "commercial" as const,
-            href: `/commercial-docs/${doc.id}`,
-            date: doc.updatedAt || doc.createdAt || "",
-        })),
-        ...procedures.map((doc) => ({
-            key: `procedure-${doc.id}`,
-            title: doc.title,
-            description: doc.description,
-            type: "procedure" as const,
-            href: `/procedures/${doc.id}`,
-            date: doc.updatedAt || doc.createdAt || "",
-        })),
+    const stats: StatCardProps[] = [
+        {
+            label: "Knowledge",
+            description: "Technical documents",
+            value: technicalDocs.length,
+            href: "/technical-docs",
+            icon: FileText,
+            tone: "violet",
+        },
+        {
+            label: "Workspace",
+            description: "Commercial documents",
+            value: commercialDocs.length,
+            href: "/commercial-docs",
+            icon: BriefcaseBusiness,
+            tone: "sky",
+        },
+        {
+            label: "Processes",
+            description: "Procedures",
+            value: procedures.length,
+            href: "/procedures",
+            icon: ClipboardList,
+            tone: "violet",
+        },
     ]
-        .sort((a, b) => b.date.localeCompare(a.date))
-        .slice(0, 6)
 
-    // Only what this role is allowed to create
-    const quickActions = [
-        {
-            label: "New technical document",
-            href: "/technical-docs/new",
-            allowed: canCreateTechnicalDocs(clerkRole),
-        },
-        {
-            label: "New commercial document",
-            href: "/commercial-docs/new",
-            allowed: canCreateCommercialDocs(clerkRole),
-        },
-        {
-            label: "New procedure",
-            href: "/procedures/new",
-            allowed: canCreateProcedures(clerkRole),
-        },
-    ].filter((action) => action.allowed)
-
-    const firstName =
-        currentUser.username?.split(" ")[0] || "there"
+    const firstName = currentUser.username?.split(" ")[0] || "there"
 
     return (
         <div className="min-h-full">
-            <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8 lg:py-10">
+            {/*
+              The layout follows the width of this block, not of the screen:
+              the Ask panel can be docked next to the page and takes 420px.
 
-                {/* Welcome */}
-                <section className="mb-10">
-                    <div className="flex items-center gap-2 text-sm font-medium text-violet-600">
-                        <Sparkles className="h-4 w-4" />
-                        <span>Your knowledge workspace</span>
-                    </div>
+              Narrow: one column, in this order: welcome, Ask, main, activity.
+              Wide: two columns that start at the same height. The left one
+              holds the welcome text and the main content, the right one the
+              Ask card and the activity.
 
-                    <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
-                        Welcome back, {firstName}
-                    </h1>
+              "contents" removes the two column wrappers on narrow screens, so
+              their children become items of the grid and "order" can mix them.
+            */}
+            <div className="mx-auto max-w-7xl px-6 py-8 @container lg:px-8 lg:py-10">
+                <div className="grid grid-cols-[minmax(0,1fr)] gap-6 @4xl:grid-cols-[minmax(0,1fr)_380px] @4xl:items-start">
 
-                    <p className="mt-2 max-w-2xl text-muted-foreground">
-                        Everything your team knows, organized in one
-                        intelligent workspace.
-                    </p>
-                </section>
-
-                {/* Ask the wiki */}
-                <section className="mb-6">
-                    <AskHero />
-                </section>
-
-                {/* Global search */}
-                <section className="mb-8">
-                    <GlobalSearch />
-                </section>
-
-                {/* Statistics */}
-                <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
-                    {/* Technical documents */}
-                    <Link
-                        href="/technical-docs"
-                        className="rounded-2xl border bg-card p-5 transition hover:shadow-sm"
-                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/30">
-                                <FileText className="h-5 w-5" />
+                    {/* Left column */}
+                    <div className="contents @4xl:flex @4xl:flex-col @4xl:gap-8">
+                        <section className="order-1 @4xl:order-none">
+                            <div className="flex items-center gap-2 text-sm font-medium text-violet-600">
+                                <Sparkles className="h-4 w-4" />
+                                <span>Your knowledge workspace</span>
                             </div>
 
-                            <span className="text-xs text-muted-foreground">
-                                Knowledge
-                            </span>
-                        </div>
+                            <h1 className="mt-3 text-3xl font-semibold leading-[1.06] tracking-[-0.045em] md:text-[2.75rem]">
+                                Welcome back, {firstName}
+                            </h1>
 
-                        <p className="mt-5 text-3xl font-semibold">
-                            {technicalDocs.length}
-                        </p>
-
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Technical documents
-                        </p>
-                    </Link>
-
-                    {/* Commercial documents */}
-                    <Link
-                        href="/commercial-docs"
-                        className="rounded-2xl border bg-card p-5 transition hover:shadow-sm"
-                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/30">
-                                <BriefcaseBusiness className="h-5 w-5" />
-                            </div>
-
-                            <span className="text-xs text-muted-foreground">
-                                Workspace
-                            </span>
-                        </div>
-
-                        <p className="mt-5 text-3xl font-semibold">
-                            {commercialDocs.length}
-                        </p>
-
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Commercial documents
-                        </p>
-                    </Link>
-
-                    {/* Procedures */}
-                    <Link
-                        href="/procedures"
-                        className="rounded-2xl border bg-card p-5 transition hover:shadow-sm"
-                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/30">
-                                <ClipboardList className="h-5 w-5" />
-                            </div>
-
-                            <span className="text-xs text-muted-foreground">
-                                Processes
-                            </span>
-                        </div>
-
-                        <p className="mt-5 text-3xl font-semibold">
-                            {procedures.length}
-                        </p>
-
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Procedures
-                        </p>
-                    </Link>
-                </section>
-
-                {/* Main content */}
-                <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_320px]">
-
-                    {/* Recent documents */}
-                    <div className="overflow-hidden rounded-2xl border bg-card">
-
-                        <div className="border-b px-6 py-5">
-                            <h2 className="font-semibold">
-                                Recent documents
-                            </h2>
-
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                Latest activity across your workspace
+                            <p className="mt-2 max-w-2xl text-muted-foreground">
+                                Everything your team knows, organized in one
+                                intelligent workspace.
                             </p>
-                        </div>
+                        </section>
 
-                        <div className="divide-y">
-                            {recentDocs.length > 0 ? (
-                                recentDocs.map((doc) => (
-                                    <DocumentCard
-                                        key={doc.key}
-                                        title={doc.title}
-                                        description={doc.description}
-                                        type={doc.type}
-                                        href={doc.href}
+                        <div className="order-3 min-w-0 space-y-8 @4xl:order-none">
+                            <section aria-labelledby="search-title">
+                                <div className="mb-3">
+                                    <SectionHeading
+                                        id="search-title"
+                                        kicker="Browse your workspace"
+                                        title="Search knowledge"
                                     />
-                                ))
-                            ) : (
-                                <div className="px-6 py-12 text-center">
-                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
-                                        <FileText className="h-5 w-5 text-muted-foreground" />
-                                    </div>
-
-                                    <p className="mt-4 font-medium">
-                                        No documents yet
-                                    </p>
-
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        Documents will appear here as your
-                                        team creates them.
-                                    </p>
-
-                                    {quickActions.length > 0 && (
-                                        <Link
-                                            href={quickActions[0].href}
-                                            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700"
-                                        >
-                                            {quickActions[0].label}
-                                            <ArrowRight className="h-4 w-4" />
-                                        </Link>
-                                    )}
                                 </div>
-                            )}
+
+                                <GlobalSearch />
+                            </section>
+
+                            <section className="grid gap-4 @xl:grid-cols-3">
+                                {stats.map((stat) => (
+                                    <StatCard key={stat.href} {...stat} />
+                                ))}
+                            </section>
+
+                            <RecentDocuments documents={recentDocuments} />
                         </div>
                     </div>
 
-                    {/* Workspace */}
-                    <aside className="rounded-2xl border bg-card p-6">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-violet-100 to-sky-100 text-violet-600 dark:from-violet-950/40 dark:to-sky-950/30">
-                            <Sparkles className="h-5 w-5" />
-                        </div>
+                    {/* Right column */}
+                    <div className="contents @4xl:flex @4xl:flex-col @4xl:gap-6">
+                        <AskHero className="order-2 @4xl:order-none" />
 
-                        <h2 className="mt-5 text-lg font-semibold">
-                            Your workspace
-                        </h2>
-
-                        <p className="mt-1 truncate text-sm text-muted-foreground">
-                            {currentUser.email}
-                        </p>
-
-                        <div className="mt-6 rounded-xl bg-muted/50 p-4">
-                            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                Current role
-                            </p>
-
-                            <p className="mt-2 font-medium capitalize">
-                                {clerkRole?.toLowerCase() || "unknown"}
-                            </p>
-                        </div>
-
-                        <div className="mt-4 space-y-2">
-                            {quickActions.map((action) => (
-                                <Link
-                                    key={action.href}
-                                    href={action.href}
-                                    className="flex items-center justify-between rounded-xl border px-4 py-3 text-sm font-medium transition hover:bg-muted"
-                                >
-                                    {action.label}
-
-                                    <ArrowRight className="h-4 w-4" />
-                                </Link>
-                            ))}
-
-                            <Link
-                                href="/user-profile"
-                                className="flex items-center justify-between rounded-xl border px-4 py-3 text-sm font-medium transition hover:bg-muted"
-                            >
-                                Your profile
-
-                                <ArrowRight className="h-4 w-4" />
-                            </Link>
-                        </div>
-                    </aside>
-                </section>
+                        <ActivityList
+                            entries={activity}
+                            showUser={admin}
+                            className="order-4 @4xl:order-none"
+                        />
+                    </div>
+                </div>
             </div>
         </div>
     )

@@ -1,0 +1,32 @@
+version: 2
+updates:
+  # Java libraries (Spring Boot, etc.)
+  - package-ecosystem: maven
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  # JS packages (Next.js, Clerk, etc.)huryuiyti"yt"yt"ythhjhhjhg
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  # Versions used in your workflows (actions/checkout@v4, ...)
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  # Base images in the Dockerfiles
+  - package-ecosystem: docker
+    directory: /backend
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /frontend
+    schedule:
+      interval: weekly

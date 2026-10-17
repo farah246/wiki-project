@@ -1,18 +1,28 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 import { Sparkles, X } from "lucide-react"
 
 import { useAsk } from "@/components/ask/ask-provider"
 
 const TEASER_KEY = "ask-teaser-dismissed"
 
-// The floating button that opens the panel, on every page except /ask.
+// The dashboard already has its own "Ask the wiki" card
+const DASHBOARD_PATH = "/dashboard"
+
+// The floating button that opens the panel, on every page except /ask
+// and the dashboard.
 export function AskLauncher() {
     const { isOpen, onAskPage, openPanel, busy } = useAsk()
+    const pathname = usePathname()
+    const onDashboard = pathname === DASHBOARD_PATH
     const [showTeaser, setShowTeaser] = useState(false)
 
     useEffect(() => {
+        // the button is hidden here: keep the teaser for the next page
+        if (onDashboard) return
+
         try {
             if (sessionStorage.getItem(TEASER_KEY)) return
         } catch {
@@ -26,7 +36,7 @@ export function AskLauncher() {
             clearTimeout(show)
             clearTimeout(hide)
         }
-    }, [])
+    }, [onDashboard])
 
     function dismissTeaser() {
         setShowTeaser(false)
@@ -37,7 +47,7 @@ export function AskLauncher() {
         }
     }
 
-    if (isOpen || onAskPage) return null
+    if (isOpen || onAskPage || onDashboard) return null
 
     return (
         <div className="fixed bottom-5 right-5 z-30 flex flex-col items-end gap-3 md:bottom-6 md:right-6">

@@ -9,9 +9,15 @@ on:
 permissions:
   contents: read
 
+# NEW: one group per branch; a newer push cancels the older run (PRs only)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   backend:
     runs-on: ubuntu-latest
+    timeout-minutes: 15          # NEW
     defaults:
       run:
         working-directory: backend
@@ -29,6 +35,7 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
+    timeout-minutes: 10          # NEW
     defaults:
       run:
         working-directory: frontend
