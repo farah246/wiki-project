@@ -53,8 +53,5 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
-      # Not blocking yet: make it blocking (remove continue-on-error)
-      # once the existing code base lints clean.
       - name: Lint
         run: npx eslint .
-        continue-on-error: true

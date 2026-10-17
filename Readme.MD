@@ -1,4 +1,4 @@
-# Wiki
+# Wiki de farah
 
 Intelligent knowledge management platform for technical documents, commercial
 documents and procedures, with semantic search, role-based access control and a
