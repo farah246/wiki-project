@@ -7,6 +7,7 @@ on:
       - 'backend/**'
       - 'frontend/**'
       - 'deploy/**'
+      - '.trivyignore'
       - '.github/workflows/deploy.yml'
       - '.github/workflows/ci.yml'
   workflow_dispatch:
@@ -67,8 +68,8 @@ jobs:
         run: |
           docker save "$IMAGE" -o backend.tar
           docker run --rm -v "$PWD:/scan" ghcr.io/aquasecurity/trivy:0.69.2 \
-            image --input /scan/backend.tar \
-            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 0
+            image --input /scan/backend.tar --ignorefile /scan/.trivyignore \
+          --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
 
       - name: Push backend
         env:
@@ -96,7 +97,7 @@ jobs:
           docker save "$IMAGE" -o frontend.tar
           docker run --rm -v "$PWD:/scan" ghcr.io/aquasecurity/trivy:0.69.2 \
             image --input /scan/frontend.tar \
-            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 0
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
 
       - name: Push frontend
         env:

@@ -1,0 +1,6 @@
+# spring-webmvc 6.2.x, fixed only in Spring Framework 7 (Boot 4).
+# 47884: needs XsltView, not used (grep over backend/src: no match).
+# 47890: needs view fragments streamed over SSE; we stream JSON via SseEmitter
+#        and no template engine is on the classpath. Revisit on Boot 4 migration.
+CVE-2026-47884 exp:2026-12-31
+CVE-2026-47890 exp:2026-12-31
