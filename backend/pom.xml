@@ -17,6 +17,7 @@
         <micrometer.version>1.15.12</micrometer.version>
         <postgresql.version>42.7.12</postgresql.version>
         <spring-framework.version>6.2.19</spring-framework.version>
+        <spring-data-bom.version>2025.0.12</spring-data-bom.version>
     </properties>
     <!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-parent -->
     <parent>
