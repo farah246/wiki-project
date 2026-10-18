@@ -38,6 +38,7 @@ jobs:
       url: ${{ env.SERVER_URL }}
     # NEW
     steps:
+      - run: exit 1
       - uses: actions/checkout@v4
 
       - uses: aws-actions/configure-aws-credentials@v4
@@ -158,3 +159,22 @@ jobs:
           }
           check "$SERVER_URL/" 200
           check "$SERVER_URL/api/procedures" 401
+
+  notify:
+    needs: [ ci, deploy ]
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Notify Discord
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          MSG="❌ Deploy pipeline failed on \`${SHA:0:7}\` (pushed by $ACTOR)
+          $RUN_URL"
+          curl -sS -X POST -H 'Content-Type: application/json' \
+            -d "$(jq -n --arg content "$MSG" '{content: $content}')" \
+            "$WEBHOOK"
