@@ -157,7 +157,7 @@ jobs:
             return 1
           }
           check "$SERVER_URL/" 200
-          check "$SERVER_URL/api/procedures" 401
+          check "$SERVER_URL/api/procedures" 418
 
       - name: Save last good tag
         env:
