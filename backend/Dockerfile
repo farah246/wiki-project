@@ -7,7 +7,7 @@ COPY src ./src
 RUN mvn -B -q clean package -DskipTests
 
 # ---- runtime stage ----
-FROM eclipse-temurin:21-jre-noble
+FROM eclipse-temurin:24-jre-noble
 WORKDIR /app
 RUN useradd -r -u 1001 appuser
 COPY --from=build /app/target/*.jar app.jar
