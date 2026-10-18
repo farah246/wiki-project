@@ -71,16 +71,11 @@ jobs:
           REG: ${{ steps.ecr.outputs.registry }}
         run: docker push --all-tags $REG/wiki-backend
 
-
-  deploy:
-    needs: [ci, build-backend]
+  build-frontend:
+    needs: ci
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    environment:
-      name: production
-      url: ${{ env.SERVER_URL }}
-    # NEW
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -94,7 +89,6 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - uses: docker/setup-buildx-action@v3
-
 
 
       - name: Build frontend (not pushed yet)
@@ -124,6 +118,30 @@ jobs:
         env:
           REG: ${{ steps.ecr.outputs.registry }}
         run: docker push --all-tags $REG/wiki-frontend
+
+
+  deploy:
+    needs: [ci, build-backend, build-frontend]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: ${{ env.SERVER_URL }}
+    # NEW
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+
 
       - name: Deploy via SSM
         env:
@@ -217,7 +235,7 @@ jobs:
 
 
   notify:
-    needs: [ ci,build-backend,deploy ]
+    needs: [ ci,build-backend, build-frontend, deploy ]
     if: failure()
     runs-on: ubuntu-latest
     timeout-minutes: 5
