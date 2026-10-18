@@ -50,22 +50,36 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      - name: Build and push backend
+      - name: Build backend (not pushed yet)
         uses: docker/build-push-action@v6
         with:
           context: ./backend
-          push: true
+          load: true
           tags: |
             ${{ steps.ecr.outputs.registry }}/wiki-backend:${{ github.sha }}
             ${{ steps.ecr.outputs.registry }}/wiki-backend:latest
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 
-      - name: Build and push frontend
+      - name: Scan backend image
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/wiki-backend:${{ github.sha }}
+        run: |
+          docker save "$IMAGE" -o backend.tar
+          docker run --rm -v "$PWD:/scan" ghcr.io/aquasecurity/trivy:0.69.2 \
+            image --input /scan/backend.tar \
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 0
+
+      - name: Push backend
+        env:
+          REG: ${{ steps.ecr.outputs.registry }}
+        run: docker push --all-tags $REG/wiki-backend
+
+      - name: Build frontend (not pushed yet)
         uses: docker/build-push-action@v6
         with:
           context: ./frontend
-          push: true
+          load: true
           build-args: |
             NEXT_PUBLIC_API_URL=${{ env.SERVER_URL }}
             NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
@@ -74,6 +88,20 @@ jobs:
             ${{ steps.ecr.outputs.registry }}/wiki-frontend:latest
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
+
+      - name: Scan frontend image
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/wiki-frontend:${{ github.sha }}
+        run: |
+          docker save "$IMAGE" -o frontend.tar
+          docker run --rm -v "$PWD:/scan" ghcr.io/aquasecurity/trivy:0.69.2 \
+            image --input /scan/frontend.tar \
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 0
+
+      - name: Push frontend
+        env:
+          REG: ${{ steps.ecr.outputs.registry }}
+        run: docker push --all-tags $REG/wiki-frontend
 
       - name: Deploy via SSM
         env:
