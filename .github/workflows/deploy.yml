@@ -185,6 +185,7 @@ jobs:
           [ "$STATUS" = "Success" ] || exit 1
 
       - name: Verify
+        id: verify
         run: |
           check() {
             for i in $(seq 1 20); do
@@ -196,7 +197,7 @@ jobs:
             return 1
           }
           check "$SERVER_URL/" 200
-          check "$SERVER_URL/api/procedures" 401
+          check "$SERVER_URL/api/procedures" 418
 
       - name: Save last good tag
         env:
@@ -204,12 +205,19 @@ jobs:
         run: |
           PARAMS=$(jq -n --arg tag "$TAG" \
             '{commands: [("echo " + $tag + " > /opt/wiki/.last_good_tag")]}')
-          aws ssm send-command --instance-ids $INSTANCE_ID \
+
+          CMD_ID=$(aws ssm send-command --instance-ids $INSTANCE_ID \
             --document-name AWS-RunShellScript --parameters "$PARAMS" \
-            --query Command.CommandId --output text    
+            --query Command.CommandId --output text)
+
+          aws ssm wait command-executed --command-id $CMD_ID --instance-id $INSTANCE_ID || true
+          STATUS=$(aws ssm get-command-invocation --command-id $CMD_ID --instance-id $INSTANCE_ID --query Status --output text)
+          echo "Save last good tag: $STATUS"
+          [ "$STATUS" = "Success" ] || exit 1
+          
 
       - name: Rollback to last good version
-        if: failure()
+        if: failure() && steps.verify.outcome != 'success'
         env:
           REG: ${{ steps.ecr.outputs.registry }}
         run: |
@@ -229,8 +237,11 @@ jobs:
             --query Command.CommandId --output text)
 
           aws ssm wait command-executed --command-id $CMD_ID --instance-id $INSTANCE_ID || true
+          STATUS=$(aws ssm get-command-invocation --command-id $CMD_ID --instance-id $INSTANCE_ID --query Status --output text)
           aws ssm get-command-invocation --command-id $CMD_ID --instance-id $INSTANCE_ID --query StandardOutputContent --output text
           aws ssm get-command-invocation --command-id $CMD_ID --instance-id $INSTANCE_ID --query StandardErrorContent --output text
+          echo "Rollback: $STATUS"
+          [ "$STATUS" = "Success" ] || { echo "::error::Le rollback a échoué (statut $STATUS)"; exit 1; }
           
 
 
