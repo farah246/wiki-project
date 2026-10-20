@@ -4,8 +4,16 @@ import Link from "next/link"
 import { UserButton } from "@clerk/nextjs"
 
 import MobileNav from "@/components/mobile-nav"
+import { RoleChip } from "@/components/role-card"
+import type { Role } from "@/lib/auth/roles"
 
-export default function AppHeader({ showAdmin }: { showAdmin: boolean }) {
+export default function AppHeader({
+                                      showAdmin,
+                                      role,
+                                  }: {
+    showAdmin: boolean
+    role: Role | null
+}) {
     return (
         <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 md:px-6">
             {/* Mobile only: on desktop the sidebar already shows the brand */}
@@ -20,7 +28,9 @@ export default function AppHeader({ showAdmin }: { showAdmin: boolean }) {
                 </Link>
             </div>
 
-            <div className="ml-auto flex items-center gap-3">
+            <div className="ml-auto flex items-center gap-4">
+                <RoleChip role={role} />
+
                 <UserButton
                     appearance={{ elements: { avatarBox: "h-9 w-9" } }}
                 />

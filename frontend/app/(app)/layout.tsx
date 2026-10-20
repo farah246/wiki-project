@@ -17,10 +17,10 @@ export default async function AppLayout({
         <AskProvider>
             <div className="flex min-h-screen bg-background">
 
-                <AppSidebar showAdmin={isAdmin(role)} />
+                <AppSidebar showAdmin={isAdmin(role)}    />
                 <div className="flex min-w-0 flex-1 flex-col">
 
-                    <AppHeader showAdmin={isAdmin(role)} />
+                    <AppHeader showAdmin={isAdmin(role)} role={role} />   {/* add role */}
 
                     <main className="min-w-0 flex-1">
                         {children}

@@ -6,6 +6,7 @@ import { DashboardTabs } from "@/components/dashboard/dashboard-tabs"
 import { GlobalSearch } from "@/components/dashboard/global-search"
 import { Insights } from "@/components/dashboard/insights"
 import { RecentDocuments } from "@/components/dashboard/recent-documents"
+import { WorkspaceStats } from "@/components/dashboard/workspace-stats"
 import { getActivity, type ActivityScope } from "@/lib/api/activity"
 import { getCommercialDocs } from "@/lib/api/commercial-doc"
 import { getProcedures } from "@/lib/api/procedures"
@@ -52,10 +53,10 @@ export default async function Dashboard() {
               The layout follows the width of this block, not of the screen:
               the Ask panel can be docked next to the page and takes 420px.
 
-              Narrow: one column (welcome, Ask, search and tabs).
-              Wide: welcome, search and tabs on the left, the Ask card on the
-              right. The Ask card hides while the panel is open, and the right
-              column then takes no space.
+              Narrow: one column (welcome, Ask, role, search and tabs).
+              Wide: welcome, stats, search and tabs on the left; the Ask card
+              and the role badge on the right (sticky). Both hide while the
+              panel is open, and the right column then takes no space.
             */}
             <div className="mx-auto max-w-7xl px-6 py-10 @container lg:px-8 lg:py-12">
                 <div className="grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-10 @4xl:grid-cols-[minmax(0,1fr)_auto]">
@@ -76,9 +77,17 @@ export default async function Dashboard() {
                         </p>
                     </section>
 
-                    <AskHero className="@4xl:col-start-2 @4xl:row-start-1 @4xl:row-end-3 @4xl:w-[380px] @4xl:self-start" />
+                    <div className="flex flex-col gap-4 @4xl:sticky @4xl:top-6 @4xl:col-start-2 @4xl:row-start-1 @4xl:row-end-3 @4xl:self-start">
+                        <AskHero className="@4xl:col-start-2 @4xl:row-start-1 @4xl:row-end-3 @4xl:w-[380px] @4xl:self-start" />
+                    </div>
 
                     <div className="min-w-0 space-y-6 @4xl:col-start-1 @4xl:row-start-2">
+                        <WorkspaceStats
+                            technicalCount={technicalDocs.length}
+                            commercialCount={commercialDocs.length}
+                            procedureCount={procedures.length}
+                        />
+
                         <section aria-labelledby="search-title">
                             <h2 id="search-title" className="sr-only">
                                 Search knowledge

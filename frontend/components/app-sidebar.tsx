@@ -4,7 +4,7 @@ import { NavSections } from "@/components/nav-sections"
 
 export default function AppSidebar({ showAdmin }: { showAdmin: boolean }) {
     return (
-        <aside className="hidden w-64 shrink-0 border-r bg-sidebar md:flex md:flex-col">
+        <aside className="hidden w-64 shrink-0 border-r bg-sidebar md:sticky md:top-0 md:flex md:h-screen md:flex-col">
 
             {/* Brand */}
             <div className="flex h-16 items-center border-b px-6">
