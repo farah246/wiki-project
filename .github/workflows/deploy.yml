@@ -22,8 +22,7 @@ permissions:
 env:
   AWS_REGION: eu-north-1
   INSTANCE_ID: i-0f5e2483d9c0a2797
-  SERVER_URL: http://13.63.43.238
-
+  SERVER_URL: https://lorebase.duckdns.org
 jobs:
   ci:
     uses: ./.github/workflows/ci.yml
